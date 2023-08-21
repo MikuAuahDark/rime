@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>RIME</title>
+		<meta charset="UTF-8">
+		<meta name="description" content="Image metadata reader and remover.">
+		<meta name="keywords" content="jpeg, exif, metadata, image">
+		<meta name="author" content="Miku AuahDark">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.16.24/dist/css/uikit.css" integrity="sha256-GkIJIk9MWGZiHChuQySvSiWUlIG3HmBcEDmfInKNi5w=" crossorigin="anonymous">
+		<script src="https://cdn.jsdelivr.net/npm/uikit@3.16.24/dist/js/uikit.js" integrity="sha256-4Hl6FzUTLZce4MtfE5pAPQqRl9HWtL8/CeasSdaLt1A=" crossorigin="anonymous"></script>
+		<script src="https://cdn.jsdelivr.net/npm/uikit@3.16.24/dist/js/uikit-icons.js" integrity="sha256-8vwlpATgEfKUGu3lhcSW3jApP5Aea6aefeKPWSsApt4=" crossorigin="anonymous"></script>
+		<script type="module" src="index.mjs"></script>
+	</head>
+	<body class="uk-padding">
+		<header class="uk-section uk-section-default">
+			<h1 class="uk-heading-small uk-text-center">Just RIME</h1>
+		</header>
+		<section class="uk-section uk-section-default">
+			<div id="input_area" class="uk-placeholder uk-height-medium" style="cursor: pointer;">
+				<!-- Uh oh -->
+				<div style="display:flex; justify-content:center; align-items:center; height:100%; pointer-events: none;">
+					<span uk-icon="icon: cloud-upload"></span>
+					<span id="input_prompt" class="uk-text-middle">Drag and drop or click to select image.</span>
+				</div>
+			</div>
+			<input id="input_file" type="file" style="display:none">
+			<!--
+				<div id="output" style="min-height: 200px; white-space: pre; border: 1px solid black;"
+					ondragenter="document.getElementById('output').textContent = ''; event.stopPropagation(); event.preventDefault();"
+					ondragover="event.stopPropagation(); event.preventDefault();"
+					ondrop="event.stopPropagation(); event.preventDefault();
+					dodrop(event);">
+					DROP FILES HERE FROM FINDER OR EXPLORER
+				</div>
+			-->
+			<div id="error_alert">
+			</div>
+		</section>
+	</body>
+</html>
