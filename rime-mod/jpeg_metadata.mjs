@@ -1,4 +1,3 @@
-import { Fraction } from "./fraction.js"
 import { Metadata } from "./metadata.mjs"
 import { TIFF_TAGS } from "./jpeg_tiff_tags.mjs"
 import { readUint16 } from "./binary_manipulation.mjs"

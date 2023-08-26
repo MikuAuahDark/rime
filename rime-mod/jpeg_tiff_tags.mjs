@@ -3,6 +3,8 @@ import { TagTypeHandler, ByteTypeHandler, ASCIITypeHandler, ShortTypeHandler, Lo
 
 /** @type {Map<number, {name: string, handler: TagTypeHandler}>} */
 export const TIFF_TAGS = new Map()
+/** @type {Map<number, {name: string, handler: TagTypeHandler}>} */
+export const GPS_TAGS = new Map()
 
 /** @type {Map<typeof TagTypeHandler, TagTypeHandler>} */
 const SINGLETON_INSTANCE = new Map()
@@ -12,7 +14,7 @@ const SINGLETON_INSTANCE = new Map()
  * @param {string} name
  * @param {typeof TagTypeHandler<any>} handler
  */
-function defineTag(id, name, handler) {
+function defineTag(id, name, handler, dest = TIFF_TAGS) {
 	let instance = null
 	if (!SINGLETON_INSTANCE.has(handler)) {
 		instance = new handler()
@@ -20,7 +22,7 @@ function defineTag(id, name, handler) {
 	} else {
 		instance = SINGLETON_INSTANCE.get(handler)
 	}
-	TIFF_TAGS[id] = { name: name, handler: instance }
+	dest[id] = { name: name, handler: instance }
 }
 
 class OrientationTypeHandler extends ShortTypeHandler {
@@ -69,6 +71,26 @@ class ResolutionUnitTypeHandler extends ShortTypeHandler {
 	}
 }
 
+class ExposureTimeTypeHandler extends RationalTypeHandler {
+	/**
+	 * @param {Fraction[]} data
+	 */
+	toReadable(data) {
+		const exposureTime = data[0].n / data[0].d
+		return `${exposureTime} seconds`
+	}
+}
+
+class FNumberTypeHandler extends RationalTypeHandler {
+	/**
+	 * @param {Fraction[]} data
+	 */
+	toReadable(data) {
+		const f = data[0].n / data[0].d
+		return `f/${exposureTime}`
+	}
+}
+
 defineTag(256, "Image Width", ShortOrLongTypeHandler)
 defineTag(257, "Image Height", ShortOrLongTypeHandler)
 defineTag(271, "Manufacturer", ASCIITypeHandler)
@@ -79,3 +101,8 @@ defineTag(283, "Y Resolution", RationalTypeHandler)
 defineTag(284, "Resolution Unit", ResolutionUnitTypeHandler)
 defineTag(305, "Software", ASCIITypeHandler)
 defineTag(306, "Date Time", ASCIITypeHandler)
+defineTag(0x8928, "Copyright", ASCIITypeHandler)
+defineTag(0x8769, "ExifIFD", LongTypeHandler)
+defineTag(0x8825, "GPSIFD", LongTypeHandler)
+defineTag(0x829A, "Exposure Time", ExposureTimeTypeHandler)
+defineTag(0x829D, "f-number", FNumberTypeHandler)

@@ -1,4 +1,4 @@
-import { Fraction } from "./fraction.js"
+import { Fraction } from "./fraction.mjs"
 import { readUint16, readUint32 } from "./binary_manipulation.mjs"
 
 /**
@@ -110,6 +110,7 @@ export class ByteTypeHandler extends TagTypeHandler {
  */
 export class ASCIITypeHandler extends TagTypeHandler {
 	constructor() {
+		super()
 		this.encoder = new TextEncoder()
 	}
 
