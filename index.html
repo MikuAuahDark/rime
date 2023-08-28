@@ -12,6 +12,10 @@
 		<script src="https://cdn.jsdelivr.net/npm/material-components-web@14.0.0/dist/material-components-web.min.js" integrity="sha256-8DHMt+TYs1kVcO+R+oZYTrHYIYwHUOChiQsqKb2BT3g=" crossorigin="anonymous"></script>
 		<script type="module" src="index.mjs"></script>
 		<style>
+			:root {
+				--output-image-max-height: 420px;
+			}
+
 			#input_area {
 				width: 100%;
 				min-height: 300px;
@@ -22,7 +26,7 @@
 			}
 
 			footer {
-				min-height: 32px;
+				margin: 16px;
 				display: flex;
 				align-items: center;
 				justify-content: center;
@@ -38,6 +42,22 @@
 				max-width: 1200px;
 				margin-left: auto;
 				margin-right: auto;
+			}
+
+			#rime_image_container {
+				max-height: var(--output-image-max-height);
+				margin: 1em auto 1em auto;
+			}
+
+			#rime_image_container img {
+				width: 100%;
+				height: 100%;
+				max-height: var(--output-image-max-height);
+				object-fit: contain;
+			}
+
+			.wide_button {
+				width: 100%;
 			}
 		</style>
 	</head>
@@ -180,11 +200,22 @@
 						</button>
 					</div>
 				</div>
-				<button id="remove_metadata" class="mdc-button mdc-button--raised" style="width: 100%">
+				<button id="remove_metadata" class="mdc-button mdc-button--raised wide_button">
 					<span class="mdc-button__ripple"></span>
 					<i class="material-icons mdc-button__icon" aria-hidden="true">delete_forever</i>
 					<span class="mdc-button__label">Remove Selected Metadata</span>
 				</button>
+			</section>
+			<section id="image_result" class="rime_container">
+				<h2 class="mdc-typography--headline4">Output Image</h2>
+				<div id="rime_image_container">
+					<img id="output_image" class="mdc-elevation--z4" src="../pwa/awhdhawd/a!.jpg">
+				</div>
+				<a id="download_image" class="mdc-button mdc-button--raised wide_button" href="../pwa/awhdhawd/a!.jpg"" download="a!.jpg">
+					<span class="mdc-button__ripple"></span>
+					<i class="material-icons mdc-button__icon" aria-hidden="true">download</i>
+					<span class="mdc-button__label">Save New Image</span>
+				</a>
 			</section>
 		</main>
 		<aside class="mdc-snackbar">
@@ -198,7 +229,9 @@
 			</div>
 		</aside>
 		<footer>
-			<p>This software is provided without warranty whatsover.</p>
+			<div class="rime_container">
+				<p>This software is provided without warranty whatsover.</p>
+			</div>
 		</footer>
 	</body>
 </html>
