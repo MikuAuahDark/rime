@@ -2,12 +2,22 @@ import { loadMetadata } from "./rime-mod/main.mjs";
 import { Metadata } from "./rime-mod/metadata.mjs";
 
 function main() {
+
 	/** @type {HTMLDivElement} */
 	let inputArea = document.getElementById("input_area")
 	/** @type {HTMLInputElement} */
 	let inputFile = document.getElementById("input_file")
-	/** @type {HTMLDivElement} */
-	let errorAlert = document.getElementById("error_alert")
+
+	// Initialize styles
+	let errorAlert = new mdc.snackbar.MDCSnackbar(document.querySelector(".mdc-snackbar"))
+	let metadataTable = new mdc.dataTable.MDCDataTable(document.getElementById("metadata_list_table"))
+	window.metadataTable = metadataTable
+
+	// Initialize top bar
+	console.log(new mdc.topAppBar.MDCTopAppBar(document.querySelector(".mdc-top-app-bar")))
+	// Initialize ripple
+	for (const elem of document.querySelectorAll(".mdc-ripple-surface, .mdc-button"))
+		mdc.ripple.MDCRipple.attachTo(elem)
 
 	/** @type {Metadata|null} */
 	let currentState = null
@@ -22,22 +32,8 @@ function main() {
 			msg = toString(message)
 		}
 
-		let divAlert = document.createElement("div")
-		divAlert.classList.add("uk-alert-danger")
-		divAlert.setAttribute("uk-alert", "")
-
-		let closeButton = document.createElement("a")
-		closeButton.classList.add("uk-alert-close")
-		closeButton.setAttribute("uk-close", "")
-
-		let header = document.createElement("h3")
-		header.textContent = "An Error Occured!"
-
-		let text = document.createElement("p")
-		text.textContent = msg
-
-		divAlert.replaceChildren(closeButton, header, text)
-		errorAlert.replaceChildren(divAlert)
+		errorAlert.labelText = msg
+		errorAlert.open()
 	}
 
 	/**
@@ -64,12 +60,14 @@ function main() {
 		inputFile.click()
 	})
 	inputArea.addEventListener("dragenter", (e) => {
-		inputArea.classList.add("uk-dragover")
+		inputArea.classList.add("mdc-elevation--z12")
+		inputArea.classList.remove("mdc-elevation--z1")
 		e.stopPropagation()
 		e.preventDefault()
 	})
 	inputArea.addEventListener("dragleave", (e) => {
-		inputArea.classList.remove("uk-dragover")
+		inputArea.classList.add("mdc-elevation--z1")
+		inputArea.classList.remove("mdc-elevation--z12")
 		e.stopPropagation()
 		e.preventDefault()
 	})
@@ -80,7 +78,8 @@ function main() {
 	inputArea.addEventListener("drop", (e) => {
 		e.stopPropagation()
 		e.preventDefault()
-		inputArea.classList.remove("uk-dragover")
+		inputArea.classList.add("mdc-elevation--z1")
+		inputArea.classList.remove("mdc-elevation--z12")
 
 		if (e.dataTransfer.items) {
 			for (const item of e.dataTransfer.items) {

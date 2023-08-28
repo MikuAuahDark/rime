@@ -7,39 +7,197 @@
 		<meta name="keywords" content="jpeg, exif, metadata, image">
 		<meta name="author" content="Miku AuahDark">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.16.24/dist/css/uikit.css" integrity="sha256-GkIJIk9MWGZiHChuQySvSiWUlIG3HmBcEDmfInKNi5w=" crossorigin="anonymous">
-		<script src="https://cdn.jsdelivr.net/npm/uikit@3.16.24/dist/js/uikit.js" integrity="sha256-4Hl6FzUTLZce4MtfE5pAPQqRl9HWtL8/CeasSdaLt1A=" crossorigin="anonymous"></script>
-		<script src="https://cdn.jsdelivr.net/npm/uikit@3.16.24/dist/js/uikit-icons.js" integrity="sha256-8vwlpATgEfKUGu3lhcSW3jApP5Aea6aefeKPWSsApt4=" crossorigin="anonymous"></script>
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/material-components-web@14.0.0/dist/material-components-web.min.css" integrity="sha256-YPguGDqg55HB8+tbrJBbWuiF9J+XCK7sjscaiwFMTxI=" crossorigin="anonymous">
+		<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+		<script src="https://cdn.jsdelivr.net/npm/material-components-web@14.0.0/dist/material-components-web.min.js" integrity="sha256-8DHMt+TYs1kVcO+R+oZYTrHYIYwHUOChiQsqKb2BT3g=" crossorigin="anonymous"></script>
 		<script type="module" src="index.mjs"></script>
+		<style>
+			#input_area {
+				width: 100%;
+				min-height: 300px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				cursor: pointer;
+			}
+
+			footer {
+				min-height: 32px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				text-align: center;
+				color: #606060;
+			}
+
+			#metadata_info_list {
+				margin-top: 1em;
+			}
+
+			.rime_container {
+				max-width: 1200px;
+				margin-left: auto;
+				margin-right: auto;
+			}
+		</style>
 	</head>
-	<body>
-		<div class="uk-padding">
-			<header class="uk-section uk-section-default">
-				<h1 class="uk-heading-small uk-text-center">Just RIME</h1>
-			</header>
-			<section class="uk-section uk-section-default">
-				<div id="input_area" class="uk-placeholder uk-height-medium" style="cursor: pointer;">
-					<!-- Uh oh -->
-					<div style="display:flex; justify-content:center; align-items:center; height:100%; pointer-events: none;">
-						<span uk-icon="icon: cloud-upload"></span>
-						<span id="input_prompt" class="uk-text-middle">Drag and drop or click to select image.</span>
-					</div>
+	<body class="mdc-typography" style="margin: 0px">
+		<header class="mdc-top-app-bar">
+			<div class="mdc-top-app-bar__row">
+				<section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-start">
+					<h1 class="mdc-top-app-bar__title">RIME</h1>
+				</section>
+				<section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-end">
+					<button class="material-icons mdc-top-app-bar__action-item mdc-icon-button" aria-label="About">
+						info_outline
+					</button>
+				</section>
+			</div>
+		</header>
+		<main class="mdc-top-app-bar--fixed-adjust">
+			<section class="rime_container">
+				<h2 class="mdc-typography--headline4">Input Image</h2>
+				<div id="input_area" class="mdc-ripple-surface mdc-elevation--z1">
+					<span class="material-icons">file_open</span>&nbsp;Drag and drop or click here to select image.
 				</div>
-				<input id="input_file" type="file" style="display:none">
-				<!--
-					<div id="output" style="min-height: 200px; white-space: pre; border: 1px solid black;"
-						ondragenter="document.getElementById('output').textContent = ''; event.stopPropagation(); event.preventDefault();"
-						ondragover="event.stopPropagation(); event.preventDefault();"
-						ondrop="event.stopPropagation(); event.preventDefault();
-						dodrop(event);">
-						DROP FILES HERE FROM FINDER OR EXPLORER
-					</div>
-				-->
-				<div id="error_alert">
-				</div>
+				<input id="input_file" type="file" hidden>
 			</section>
-		</div>
-		<footer class="uk-section uk-section-primary uk-text-center">
+			<section id="metadata_info_list" class="rime_container">
+				<!-- .rime_buttons must appear in the order in the index.mjs -->
+				<div class="mdc-layout-grid">
+					<div class="mdc-layout-grid__inner rime_buttons">
+						<button class="mdc-layout-grid__cell mdc-layout-grid__cell--span-3-desktop mdc-button mdc-button--outlined">
+							<span class="mdc-button__ripple"></span>
+							<span class="mdc-button__label">Export to CSV</span>
+						</button>
+						<button class="mdc-layout-grid__cell mdc-layout-grid__cell--span-3-desktop mdc-button mdc-button--outlined">
+							<span class="mdc-button__ripple"></span>
+							<span class="mdc-button__label">Clear Selection</span>
+						</button>
+						<button class="mdc-layout-grid__cell mdc-layout-grid__cell--span-3-desktop mdc-button mdc-button--outlined">
+							<span class="mdc-button__ripple"></span>
+							<span class="mdc-button__label">Select Recommended</span>
+						</button>
+						<button class="mdc-layout-grid__cell mdc-layout-grid__cell--span-3-desktop mdc-button mdc-button--outlined">
+							<span class="mdc-button__ripple"></span>
+							<span class="mdc-button__label">Select All</span>
+						</button>
+					</div>
+				</div>
+				<!-- Metadata list -->
+				<div id="metadata_list_table" class="mdc-data-table" style="width: 100%">
+					<div class="mdc-data-table__table-container">
+						<table class="mdc-data-table__table" aria-label="Dessert calories">
+							<thead>
+								<tr class="mdc-data-table__header-row">
+									<th class="mdc-data-table__header-cell mdc-data-table__header-cell--checkbox" role="columnheader" scope="col">
+										<div class="mdc-checkbox mdc-data-table__header-row-checkbox mdc-checkbox--selected">
+											<input type="checkbox" class="mdc-checkbox__native-control" aria-label="Toggle all rows">
+											<div class="mdc-checkbox__background">
+												<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+													<path class="mdc-checkbox__checkmark-path" fill="none" d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+												</svg>
+												<div class="mdc-checkbox__mixedmark"></div>
+											</div>
+											<div class="mdc-checkbox__ripple"></div>
+										</div>
+									</th>
+									<th class="mdc-data-table__header-cell" role="columnheader" scope="col">Metadata Name</th>
+									<th class="mdc-data-table__header-cell" role="columnheader" scope="col">Metadata Value</th>
+								</tr>
+							</thead>
+							<tbody class="mdc-data-table__content" id="metadata_list">
+								<!-- TODO: Auto-generate through JavaScript -->
+								<tr data-row-id="u0" class="mdc-data-table__row">
+									<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+										<div class="mdc-checkbox mdc-data-table__row-checkbox">
+											<input type="checkbox" class="mdc-checkbox__native-control" aria-labelledby="u0" disabled>
+											<div class="mdc-checkbox__background">
+												<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+													<path class="mdc-checkbox__checkmark-path" fill="none" d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+												</svg>
+												<div class="mdc-checkbox__mixedmark"></div>
+											</div>
+											<div class="mdc-checkbox__ripple"></div>
+										</div>
+									</td>
+									<th class="mdc-data-table__cell" scope="row" id="u0">Image Dimensions</th>
+									<td class="mdc-data-table__cell">1920x1080</td>
+								</tr>
+								<tr data-row-id="u1" class="mdc-data-table__row mdc-data-table__row--selected" aria-selected="true">
+									<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+										<div class="mdc-checkbox mdc-data-table__row-checkbox mdc-checkbox--selected">
+											<input type="checkbox" class="mdc-checkbox__native-control" checked aria-labelledby="u1">
+											<div class="mdc-checkbox__background">
+												<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+													<path class="mdc-checkbox__checkmark-path" fill="none" d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+												</svg>
+												<div class="mdc-checkbox__mixedmark"></div>
+											</div>
+											<div class="mdc-checkbox__ripple"></div>
+										</div>
+									</td>
+									<th class="mdc-data-table__cell" scope="row" id="u1">Location</th>
+									<td class="mdc-data-table__cell">New Zealand</td>
+								</tr>
+								<tr data-row-id="u2" class="mdc-data-table__row" aria-selected="true">
+									<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+										<div class="mdc-checkbox mdc-data-table__row-checkbox mdc-checkbox--selected">
+											<input type="checkbox" class="mdc-checkbox__native-control" aria-labelledby="u2">
+											<div class="mdc-checkbox__background">
+												<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+													<path class="mdc-checkbox__checkmark-path" fill="none" d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+												</svg>
+												<div class="mdc-checkbox__mixedmark"></div>
+											</div>
+											<div class="mdc-checkbox__ripple"></div>
+										</div>
+									</td>
+									<th class="mdc-data-table__cell" scope="row" id="u2">Time Taken</th>
+									<td class="mdc-data-table__cell">Thursday, January 1st 1970</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<div class="mdc-layout-grid">
+					<div class="mdc-layout-grid__inner rime_buttons">
+						<button class="mdc-layout-grid__cell mdc-layout-grid__cell--span-3-desktop mdc-button mdc-button--outlined">
+							<span class="mdc-button__ripple"></span>
+							<span class="mdc-button__label">Export to CSV</span>
+						</button>
+						<button class="mdc-layout-grid__cell mdc-layout-grid__cell--span-3-desktop mdc-button mdc-button--outlined">
+							<span class="mdc-button__ripple"></span>
+							<span class="mdc-button__label">Clear Selection</span>
+						</button>
+						<button class="mdc-layout-grid__cell mdc-layout-grid__cell--span-3-desktop mdc-button mdc-button--outlined">
+							<span class="mdc-button__ripple"></span>
+							<span class="mdc-button__label">Select Recommended</span>
+						</button>
+						<button class="mdc-layout-grid__cell mdc-layout-grid__cell--span-3-desktop mdc-button mdc-button--outlined">
+							<span class="mdc-button__ripple"></span>
+							<span class="mdc-button__label">Select All</span>
+						</button>
+					</div>
+				</div>
+				<button id="remove_metadata" class="mdc-button mdc-button--raised" style="width: 100%">
+					<span class="mdc-button__ripple"></span>
+					<i class="material-icons mdc-button__icon" aria-hidden="true">delete_forever</i>
+					<span class="mdc-button__label">Remove Selected Metadata</span>
+				</button>
+			</section>
+		</main>
+		<aside class="mdc-snackbar">
+			<div class="mdc-snackbar__surface" role="status" aria-relevant="additions">
+				<div class="mdc-snackbar__label" aria-atomic="false"></div>
+				<div class="mdc-snackbar__actions" aria-atomic="true">
+					<button class="mdc-icon-button mdc-snackbar__dismiss material-icons" title="Dismiss">
+						close
+					</button>
+				</div>
+			</div>
+		</aside>
+		<footer>
 			<p>This software is provided without warranty whatsover.</p>
 		</footer>
 	</body>
