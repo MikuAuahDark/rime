@@ -10,18 +10,54 @@ import { readUint16, readUint32 } from "./binary_manipulation.mjs"
  */
 export function getElementSize(tagNum) {
 	switch (tagNum) {
-		case 1:
-		case 2:
-		case 7:
+		case 1:  // BYTE
+		case 2:  // ASCII
+		case 6:  // SBYTE
+		case 7:  // UNDEFINED
 			return 1
-		case 3:
+		case 3:  // SHORT
+		case 8:  // SSHORT
 			return 2
-		case 4:
+		case 4:  // LONG
+		case 9:  // SLONG
+		case 11: // FLOAT
 			return 4
-		case 5:
+		case 5:  // RATIONAL
+		case 10: // SRATIONAL
+		case 12: // DOUBLE
 			return 8
 		default:
 			return 0
+	}
+}
+
+export class RawIFDData {
+	/**
+	 * @param {number} type
+	 * @param {number} count
+	 * @param {Uint8Array} data
+	 */
+	constructor(type, count, data) {
+		this.type = type
+		this.count = count
+		this.data = data
+	}
+}
+
+export class ParsedIFDData {
+	/**
+	 * @param {string} name
+	 * @param {TagTypeHandler<any>} handler
+	 * @param {Uint8Array} data
+	 */
+	constructor(name, handler, data) {
+		this.name = name
+		this.handler = handler
+		this.parsedData = handler.decode(data)
+	}
+
+	toString() {
+		return this.handler.toReadable(this.parsedData)
 	}
 }
 

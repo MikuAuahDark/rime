@@ -8,7 +8,6 @@ const METADATA_PARSERS = [JPEGMetadata]
 
 /**
  * @param {Uint8Array} file
- * @returns {Metadata}
  */
 export function loadMetadata(file) {
 	for (const parser of METADATA_PARSERS) {

@@ -1,8 +1,12 @@
 import { Metadata } from "./metadata.mjs"
 import { TIFF_TAGS } from "./jpeg_tiff_tags.mjs"
-import { readUint16 } from "./binary_manipulation.mjs"
+import { TagTypeHandler, RawIFDData, getElementSize, ParsedIFDData } from "./jpeg_tiff_tag_type.mjs"
+import { readUint16, readUint32 } from "./binary_manipulation.mjs"
 
+// FF D9, FF DA, FF DB, FF DC, FF DD, FF DE, FF DF
 const MARKER_INVALID = new Set([0xD9, 0xDA, 0xDB, 0xDC, 0xDD, 0xDE, 0xDF])
+// EXIF\0\0
+const EXIF_IDENTIFIER = [69, 88, 73, 70, 0, 0]
 
 /**
  * @param {Uint8Array} data 
@@ -16,8 +20,17 @@ function isEXIFMarker(data, offset) {
 	return data[offset] == 0xFF && data[offset + 1] == 0xE1
 }
 
+function hasEXIFData(data, offset) {
+	for (let i = 0; i < EXIF_IDENTIFIER.length; i++) {
+		if (data[offset + i] != EXIF_IDENTIFIER[i]) {
+			return false
+		}
+	}
+
+	return true
+}
+
 /**
- * 
  * @param  {Uint8Array[]} arrays
  */
 function consolidateUint8Array(arrays) {
@@ -36,6 +49,83 @@ function consolidateUint8Array(arrays) {
 	}
 
 	return result
+}
+
+/**
+ * @param {Uint8Array} data
+ * @param {number} start
+ * @param {boolean} bigEndian
+ * @param {{[key: number]: ParsedIFDData}} destParsed
+ * @param {{[key: number]: RawIFDData}} destRaw
+ */
+function parseIFD(data, start, bigEndian, destParsed, destRaw, tagLookup = TIFF_TAGS) {
+	const ifdLength = readUint16(data, start, bigEndian)
+
+	for (let i = 0; i < ifdLength; i++) {
+		const offset = i * 12 // tagID (2), tagNum (2), valueCount (4), value (4)
+		const tagID = readUint16(data, start + offset, bigEndian)
+		const tagDType = readUint16(data, start + offset + 2, bigEndian)
+		const valueCount = readUint32(data, start + offset + 4, bigEndian)
+		const elementSize = getElementSize(tagDType) * valueCount
+		let valueData = undefined
+
+		if (elementSize <= 4) {
+			valueData = data.slice(start + offset + 8, start + offset + 8 + elementSize)
+		} else {
+			const valueOffset = readUint32(data, start + offset + 8, bigEndian)
+			valueData = data.slice(valueOffset, valueOffset + elementSize)
+		}
+
+		if (tagLookup.has(tagID)) {
+			const tagInfo = tagLookup.get(tagID)
+
+			if (tagInfo.handler.accept(tagDType)) {
+				destParsed[tagID] = new ParsedIFDData(tagInfo.name, tagInfo.handler, valueData)
+			} else {
+				destRaw[tagID] = new RawIFDData(tagDType, valueCount, valueData)
+			}
+		} else {
+			destRaw[tagID] = new RawIFDData(tagDType, valueCount, valueData)
+		}
+	}
+
+	return readUint32(data, start + ifdLength * 12, bigEndian)
+}
+
+/**
+ * @param {Uint8Array} data
+ * @param {number} offset
+ * @param {{[key: number]: ParsedIFDData}[]} destParsed
+ * @param {{[key: number]: RawIFDData}[]} destRaw
+ * @return is it big endian?
+ */
+function parseTIFF(data, offset, destParsed, destRaw) {
+	let bigendian = false
+
+	if (data[offset] == 77 && data[offset] == 77) {
+		bigendian = true
+	} else if (data[offset] != 73 || data[offset] != 73) {
+		throw new Error("Invalid TIFF header while parsing.")
+	}
+
+	const number42 = readUint16(data, offset + 2, bigendian)
+	if (number42 != 42) {
+		throw new Error("Invalid TIFF header while parsing.")
+	}
+
+	// Time to parse IFD
+	let nextIFD = offset + 4
+	while (nextIFD != 0) {
+		const newDestParsed = {}
+		const newDestRaw = {}
+		nextIFD = parseIFD(data, nextIFD, bigendian, newDestParsed, newDestRaw)
+
+		destParsed.push(newDestParsed)
+		destRaw.push(newDestRaw)
+	}
+
+	// Return endianess
+	return bigendian
 }
 
 export class JPEGMetadata extends Metadata {
@@ -57,6 +147,7 @@ export class JPEGMetadata extends Metadata {
 		/** @type {Uint8Array[]} */
 		let exifs = []
 
+		// TODO: Parse FF E0
 		while (true) {
 			// Current `pos` is the marker, pos + 2 is the length
 			if (isInvalidMarker(file, pos)) {
@@ -83,13 +174,27 @@ export class JPEGMetadata extends Metadata {
 		}
 
 		if (!exifFound) {
-			return
+			throw new Error("No EXIF data present.")
 		}
 
 		// Parse EXIF data
 		const exifData = consolidateUint8Array(exifs)
+		if (!hasEXIFData(exifData, 0)) {
+			throw new Error("No EXIF data present.")
+		}
 
-		
+		// The "Tiff" data is the one in IFDs
+		/** @type {{[key: number]: ParsedIFDData}[]} */
+		this.parsedTiffData = []
+		/** @type {{[key: number]: RawIFDData}[]} */
+		this.rawTiffData = []
+		/** @type {[key: number]: ParsedIFDData}} */
+		this.parsedExifData = {}
+		/** @type {[key: number]: RawIFDData}} */
+		this.rawExifData = {}
+
+		// Parse TIFF
+		this.bigEndian = parseTIFF(exifData, 6, this.parsedTiffData, this.rawTiffData)
 	}
 
 	/**
