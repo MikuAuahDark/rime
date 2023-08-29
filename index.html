@@ -42,18 +42,20 @@
 				max-width: 1200px;
 				margin-left: auto;
 				margin-right: auto;
+				padding: 16px;
 			}
 
 			#rime_image_container {
 				max-height: var(--output-image-max-height);
 				margin: 1em auto 1em auto;
+				display: flex;
+				align-items: center;
+				justify-content: center;
 			}
 
 			#rime_image_container img {
-				width: 100%;
-				height: 100%;
-				max-height: var(--output-image-max-height);
-				object-fit: contain;
+				max-width: 100%;
+				max-height: inherit;
 			}
 
 			.wide_button {
