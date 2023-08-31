@@ -5,19 +5,38 @@ function main() {
 
 	/** @type {HTMLDivElement} */
 	let inputArea = document.getElementById("input_area")
+	/** @type {HTMLImageElement} */
+	let inputImage = document.getElementById("input_image")
+	/** @type {HTMLDivElement} */
+	let inputAreaInfo = document.getElementById("input_area_info")
 	/** @type {HTMLInputElement} */
 	let inputFile = document.getElementById("input_file")
+	/** @type {HTMLElement} */
+	let metadataInfoListSection = document.getElementById("metadata_info_list")
+	/** @type {HTMLTableElement} */
+	let metadataListTable = document.getElementById("metadata_list_table")
+	/** @type {HTMLTableSectionElement} */
+	let metadataListTableBody = document.getElementById("metadata_list")
+	/** @type {HTMLButtonElement} */
+	let removeMetadataButton = document.getElementById("remove_metadata")
+	/** @type {HTMLElement} */
+	let imageResultSection = document.getElementById("image_result")
+	/** @type {HTMLImageElement} */
+	let outputImage = document.getElementById("output_image")
+	/** @type {HTMLAnchorElement} */
+	let downloadImageButton = document.getElementById("download_image")
 
 	// Initialize styles
 	let errorAlert = new mdc.snackbar.MDCSnackbar(document.querySelector(".mdc-snackbar"))
-	let metadataTable = new mdc.dataTable.MDCDataTable(document.getElementById("metadata_list_table"))
-	window.metadataTable = metadataTable
+	let metadataListTableMDC = new mdc.dataTable.MDCDataTable(metadataListTable)
+	window.metadataTable = metadataListTableMDC
 
 	// Initialize top bar
-	console.log(new mdc.topAppBar.MDCTopAppBar(document.querySelector(".mdc-top-app-bar")))
+	let topBar = new mdc.topAppBar.MDCTopAppBar(document.querySelector(".mdc-top-app-bar"))
 	// Initialize ripple
-	for (const elem of document.querySelectorAll(".mdc-ripple-surface, .mdc-button"))
+	for (const elem of document.querySelectorAll(".mdc-ripple-surface, .mdc-button")) {
 		mdc.ripple.MDCRipple.attachTo(elem)
+	}
 
 	/** @type {Metadata|null} */
 	let currentState = null
