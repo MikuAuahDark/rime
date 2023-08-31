@@ -2,11 +2,7 @@ import { Metadata } from "./metadata.mjs"
 import { TIFF_TAGS } from "./jpeg_tiff_tags.mjs"
 import { TagTypeHandler, RawIFDData, getElementSize, ParsedIFDData } from "./jpeg_tiff_tag_type.mjs"
 import { readUint16, readUint32 } from "./binary_manipulation.mjs"
-
-// FF D9, FF DA, FF DB, FF DC, FF DD, FF DE, FF DF
-const MARKER_INVALID = new Set([0xD9, 0xDA, 0xDB, 0xDC, 0xDD, 0xDE, 0xDF])
-// EXIF\0\0
-const EXIF_IDENTIFIER = [69, 88, 73, 70, 0, 0]
+import { EXIF_IDENTIFIER, EXIF_IFD_ID, GPS_IFD_ID, INTEROP_IFD_ID, MARKER_INVALID } from "./jpeg_const.mjs"
 
 /**
  * @param {Uint8Array} data 
@@ -102,9 +98,9 @@ function parseIFD(data, start, bigEndian, destParsed, destRaw, tagLookup = TIFF_
 function parseTIFF(data, offset, destParsed, destRaw) {
 	let bigendian = false
 
-	if (data[offset] == 77 && data[offset] == 77) {
+	if (data[offset] == 77 && data[offset + 1] == 77) {
 		bigendian = true
-	} else if (data[offset] != 73 || data[offset] != 73) {
+	} else if (data[offset] != 73 || data[offset + 1] != 73) {
 		throw new Error("Invalid TIFF header while parsing.")
 	}
 
@@ -188,13 +184,55 @@ export class JPEGMetadata extends Metadata {
 		this.parsedTiffData = []
 		/** @type {{[key: number]: RawIFDData}[]} */
 		this.rawTiffData = []
-		/** @type {[key: number]: ParsedIFDData}} */
+		/** @type {{[key: number]: ParsedIFDData}} */
 		this.parsedExifData = {}
-		/** @type {[key: number]: RawIFDData}} */
+		/** @type {{[key: number]: RawIFDData}} */
 		this.rawExifData = {}
 
 		// Parse TIFF
 		this.bigEndian = parseTIFF(exifData, 6, this.parsedTiffData, this.rawTiffData)
+
+		// Check EXIF IFD
+		if (EXIF_IFD_ID in this.parsedTiffData[0]) {
+			const exifIFDOffset = this.parsedTiffData[0][EXIF_IFD_ID].parsedData[0]
+			parseIFD(exifData, exifIFDOffset, this.bigEndian, this.parsedExifData, this.rawExifData)
+		}
+
+		// TODO: GPS IFD
+		if (GPS_IFD_ID in this.parsedExifData[0]) {
+			delete this.parsedExifData[0][GPS_IFD_ID]
+		}
+
+		if (INTEROP_IFD_ID in this.parsedExifData[0]) {
+			delete this.parsedExifData[0][INTEROP_IFD_ID]
+		}
+	}
+
+	getMetadata() {
+		/** @type {MetadataResult[]} */
+		const result = []
+
+		// Parsed TIFF IFD 0 first
+		for (const [key, value] of Object.entries(this.parsedTiffData[0])) {
+			result.push({
+				id: key,
+				name: value.name,
+				value: value.toString(),
+				level: 0
+			})
+		}
+
+		// EXIF metadata
+		for (const [key, value] of Object.entries(this.parsedExifData)) {
+			result.push({
+				id: key,
+				name: value.name,
+				value: value.toString(),
+				level: 2
+			})
+		}
+
+		return result
 	}
 
 	/**
@@ -202,6 +240,6 @@ export class JPEGMetadata extends Metadata {
 	 * @returns {boolean} `true` if this class can parse this file and its metadata.
 	 */
 	static test(file) {
-		return file[0] == 0xFF && file[1] == 0xD8
+		return file.length >= 2 && file[0] == 0xFF && file[1] == 0xD8
 	}
 }

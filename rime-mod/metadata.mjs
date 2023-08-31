@@ -1,3 +1,7 @@
+/**
+ * @typedef {{id: string, name: string, value: string, level: number}} MetadataResult
+ */
+
 export class Metadata
 {
 	/**
@@ -15,7 +19,7 @@ export class Metadata
 	 * * `value` - Metadata value as string.
 	 * * `level` - Metadata level. 0 means non-removable, 1 means removable but not recommended, 2 means removable.
 	 * 
-	 * @returns {{id: string, name: string, value: string, level: number}[]} List of metadata in the file.
+	 * @returns {MetadataResult[]} List of metadata in the file.
 	 */
 	getMetadata() {
 		throw new Error("need to override getMetadata")
@@ -24,7 +28,7 @@ export class Metadata
 	/**
 	 * Remove the list of metadata and return the new file with its selected metadata removed.
 	 * 
-	 * @param {Set<string>} metadatas List of metadatas to be removed.
+	 * @param {Set<string>} metadatas List of metadata IDs to be removed.
 	 * @returns {Uint8Array} New file with the specified metadata removed.
 	 */
 	removeMetadata(metadatas) {
