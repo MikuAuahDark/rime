@@ -22,7 +22,7 @@ function defineTag(id, name, handler, dest = TIFF_TAGS) {
 	} else {
 		instance = SINGLETON_INSTANCE.get(handler)
 	}
-	dest[id] = { name: name, handler: instance }
+	dest.set(id, {name: name, handler: instance})
 }
 
 /**

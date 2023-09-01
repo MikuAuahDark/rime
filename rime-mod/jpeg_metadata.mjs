@@ -49,27 +49,28 @@ function consolidateUint8Array(arrays) {
 
 /**
  * @param {Uint8Array} data
- * @param {number} start
+ * @param {number} tiffStart
+ * @param {number} ifdStart
  * @param {boolean} bigEndian
  * @param {{[key: number]: ParsedIFDData}} destParsed
  * @param {{[key: number]: RawIFDData}} destRaw
  */
-function parseIFD(data, start, bigEndian, destParsed, destRaw, tagLookup = TIFF_TAGS) {
-	const ifdLength = readUint16(data, start, bigEndian)
+function parseIFD(data, tiffStart, ifdStart, bigEndian, destParsed, destRaw, tagLookup = TIFF_TAGS) {
+	const ifdLength = readUint16(data, tiffStart + ifdStart, bigEndian)
 
 	for (let i = 0; i < ifdLength; i++) {
-		const offset = i * 12 // tagID (2), tagNum (2), valueCount (4), value (4)
-		const tagID = readUint16(data, start + offset, bigEndian)
-		const tagDType = readUint16(data, start + offset + 2, bigEndian)
-		const valueCount = readUint32(data, start + offset + 4, bigEndian)
+		const offset = 2 + i * 12 // tagID (2), tagNum (2), valueCount (4), value (4)
+		const tagID = readUint16(data, ifdStart + offset, bigEndian)
+		const tagDType = readUint16(data, ifdStart + offset + 2, bigEndian)
+		const valueCount = readUint32(data, ifdStart + offset + 4, bigEndian)
 		const elementSize = getElementSize(tagDType) * valueCount
 		let valueData = undefined
 
 		if (elementSize <= 4) {
-			valueData = data.slice(start + offset + 8, start + offset + 8 + elementSize)
+			valueData = data.slice(ifdStart + offset + 8, ifdStart + offset + 8 + elementSize)
 		} else {
-			const valueOffset = readUint32(data, start + offset + 8, bigEndian)
-			valueData = data.slice(valueOffset, valueOffset + elementSize)
+			const valueOffset = readUint32(data, ifdStart + offset + 8, bigEndian)
+			valueData = data.slice(tiffStart + valueOffset, tiffStart + valueOffset + elementSize)
 		}
 
 		if (tagLookup.has(tagID)) {
@@ -85,7 +86,7 @@ function parseIFD(data, start, bigEndian, destParsed, destRaw, tagLookup = TIFF_
 		}
 	}
 
-	return readUint32(data, start + ifdLength * 12, bigEndian)
+	return readUint32(data, ifdStart + 2 + ifdLength * 12, bigEndian)
 }
 
 /**
@@ -96,32 +97,33 @@ function parseIFD(data, start, bigEndian, destParsed, destRaw, tagLookup = TIFF_
  * @return is it big endian?
  */
 function parseTIFF(data, offset, destParsed, destRaw) {
-	let bigendian = false
+	let bigEndian = false
 
 	if (data[offset] == 77 && data[offset + 1] == 77) {
-		bigendian = true
+		bigEndian = true
 	} else if (data[offset] != 73 || data[offset + 1] != 73) {
 		throw new Error("Invalid TIFF header while parsing.")
 	}
 
-	const number42 = readUint16(data, offset + 2, bigendian)
+	const number42 = readUint16(data, offset + 2, bigEndian)
 	if (number42 != 42) {
 		throw new Error("Invalid TIFF header while parsing.")
 	}
 
 	// Time to parse IFD
-	let nextIFD = offset + 4
+	let nextIFD = readUint32(data, offset + 4, bigEndian)
 	while (nextIFD != 0) {
 		const newDestParsed = {}
 		const newDestRaw = {}
-		nextIFD = parseIFD(data, nextIFD, bigendian, newDestParsed, newDestRaw)
+		/* +6 for EXIF header */
+		nextIFD = parseIFD(data, EXIF_IDENTIFIER.length, nextIFD, bigEndian, newDestParsed, newDestRaw)
 
 		destParsed.push(newDestParsed)
 		destRaw.push(newDestRaw)
 	}
 
 	// Return endianess
-	return bigendian
+	return bigEndian
 }
 
 export class JPEGMetadata extends Metadata {
@@ -129,6 +131,8 @@ export class JPEGMetadata extends Metadata {
 	 * @param {Uint8Array} file File to parse.
 	 */
 	constructor(file) {
+		super(file)
+
 		this.file = file
 
 		// Parse
@@ -136,7 +140,7 @@ export class JPEGMetadata extends Metadata {
 			throw new Error("Not JPEG")
 		}
 
-		this.startExifPos = 0
+		this.startExifPos = 0 // including FF E1 marker
 		this.endExifPos = 0
 		let pos = 2
 		let exifFound = false
@@ -175,6 +179,7 @@ export class JPEGMetadata extends Metadata {
 
 		// Parse EXIF data
 		const exifData = consolidateUint8Array(exifs)
+		window.lastExifData = exifData
 		if (!hasEXIFData(exifData, 0)) {
 			throw new Error("No EXIF data present.")
 		}
@@ -195,15 +200,15 @@ export class JPEGMetadata extends Metadata {
 		// Check EXIF IFD
 		if (EXIF_IFD_ID in this.parsedTiffData[0]) {
 			const exifIFDOffset = this.parsedTiffData[0][EXIF_IFD_ID].parsedData[0]
-			parseIFD(exifData, exifIFDOffset, this.bigEndian, this.parsedExifData, this.rawExifData)
+			parseIFD(exifData, EXIF_IDENTIFIER.length, exifIFDOffset, this.bigEndian, this.parsedExifData, this.rawExifData)
 		}
 
 		// TODO: GPS IFD
-		if (GPS_IFD_ID in this.parsedExifData[0]) {
+		if (GPS_IFD_ID in this.parsedTiffData[0]) {
 			delete this.parsedExifData[0][GPS_IFD_ID]
 		}
 
-		if (INTEROP_IFD_ID in this.parsedExifData[0]) {
+		if (INTEROP_IFD_ID in this.parsedTiffData[0]) {
 			delete this.parsedExifData[0][INTEROP_IFD_ID]
 		}
 	}
