@@ -3,8 +3,12 @@ import { Metadata } from "./rime-mod/metadata.mjs";
 
 class LayoutManager {
 	constructor() {
-		/** @type {((file: File) => boolean)|null} */
+		/** @type {((file: File) => void)|null} */
 		this.processFile = null
+		/** @type {string|null} */
+		this.inputObjectURL = null
+		/** @type {string|null} */
+		this.outputObjectURL = null
 
 		/** @type {HTMLDivElement} */
 		this.inputArea = document.getElementById("input_area")
@@ -56,20 +60,30 @@ class LayoutManager {
 	 * @param {DragEvent} e
 	 */
 	dragEnter(e) {
-		this.inputArea.classList.add("mdc-elevation--z12")
-		this.inputArea.classList.remove("mdc-elevation--z1")
 		e.stopPropagation()
 		e.preventDefault()
+
+		this.inputArea.classList.add("mdc-elevation--z12")
+		this.inputArea.classList.remove("mdc-elevation--z1")
+		this.inputImage.style.filter = "opacity(25%) blur(2px)"
+		if (this.inputObjectURL) {
+			this.inputAreaInfo.style.visibility = "visible"
+		}
 	}
 
 	/**
 	 * @param {DragEvent} e
 	 */
 	dragLeave(e) {
-		this.inputArea.classList.add("mdc-elevation--z1")
-		this.inputArea.classList.remove("mdc-elevation--z12")
 		e.stopPropagation()
 		e.preventDefault()
+
+		this.inputArea.classList.add("mdc-elevation--z1")
+		this.inputArea.classList.remove("mdc-elevation--z12")
+		this.inputImage.style.filter = "opacity(100%) blur(0px)"
+		if (this.inputObjectURL) {
+			this.inputAreaInfo.style.visibility = "hidden"
+		}
 	}
 
 	/**
@@ -86,20 +100,29 @@ class LayoutManager {
 	dropEvent(e) {
 		e.stopPropagation()
 		e.preventDefault()
+
 		this.inputArea.classList.add("mdc-elevation--z1")
 		this.inputArea.classList.remove("mdc-elevation--z12")
+		this.inputImage.style.filter = "opacity(100%) blur(0px)"
+		if (this.inputObjectURL) {
+			this.inputAreaInfo.style.visibility = "hidden"
+		}
 
 		if (e.dataTransfer.items) {
 			for (const item of e.dataTransfer.items) {
 				if (item.kind == "file") {
 					const file = item.getAsFile()
-					this.processFileBase(file)
+					if (this.processFile) {
+						this.processFile(file)
+					}
 					break
 				}
 			}
 		} else {
 			for (const file of e.dataTransfer.files) {
-				this.processFileBase(file)
+				if (this.processFile) {
+					this.processFile(file)
+				}
 				break
 			}
 		}
@@ -112,7 +135,10 @@ class LayoutManager {
 	inputFileChange(e) {
 		e.preventDefault()
 		if (this.inputFile.files) {
-			for (const file of inputFile.files) {
+			for (const file of this.inputFile.files) {
+				if (this.processFile) {
+					this.processFile(file)
+				}
 				break
 			}
 		}
@@ -121,13 +147,15 @@ class LayoutManager {
 	}
 
 	/**
-	 * @param {(file: File) => boolean} cb
+	 * @param {(file: File) => void} cb
 	 */
 	setProcessFileCallback(cb) {
 		this.processFile = cb
 	}
 
 	showError(message) {
+		window.getLastError = message
+
 		let msg = ""
 		if (message instanceof Error) {
 			msg = message.message
@@ -139,16 +167,22 @@ class LayoutManager {
 		this.errorAlert.open()
 	}
 
-	/**
-	 * @param {File} file
-	 */
-	processFileBase(file) {
-		const result = this.processFile ? this.processFile(file) : false
+	showInputImage(buffer) {
+		const url = URL.createObjectURL(buffer)
+		this.inputImage.src = url
+
+		if (this.inputObjectURL) {
+			URL.revokeObjectURL(this.inputObjectURL)
+		}
+
+		this.inputObjectURL = url
+		this.inputAreaInfo.style.removeProperty("height")
+		this.inputAreaInfo.style.visibility = "hidden"
 	}
 }
 
 function main() {
-	let layout = new LayoutManager()
+	const layout = new LayoutManager()
 
 	// Initialize ripple
 	for (const elem of document.querySelectorAll(".mdc-ripple-surface, .mdc-button")) {
@@ -161,21 +195,23 @@ function main() {
 	let currentFilename = null
 
 	layout.setProcessFileCallback((file) => {
-		file.arrayBuffer().then((v) => {
-			let newFile = new Uint8Array(v)
-			console.log(file.name)
+		file.arrayBuffer()
+			.then(async (v) => {
+				let newFile = new Uint8Array(v)
+				console.log(file.name)
 
-			try {
-				currentState = loadMetadata(newFile)
-				currentFilename = file.name
+				try {
+					currentState = loadMetadata(newFile)
+					currentFilename = file.name
+					window.currentState = currentState
+					window.currentFilename = currentFilename
 
-				// TODO: Show image
-				return true
-			} catch (e) {
-				layout.showError(e)
-				return false
-			}
-		}, showError)
+					layout.showInputImage(file)
+				} catch (e) {
+					layout.showError(e)
+				}
+			})
+			.catch(layout.showError.bind(layout))
 	})
 }
 
