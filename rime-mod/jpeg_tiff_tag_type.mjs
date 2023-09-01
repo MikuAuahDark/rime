@@ -47,13 +47,18 @@ export class RawIFDData {
 export class ParsedIFDData {
 	/**
 	 * @param {string} name
+	 * @param {number} tagNum
+	 * @param {number} offset
+	 * @param {number} count
+	 * @param {boolean} bigEndian
 	 * @param {TagTypeHandler<any>} handler
 	 * @param {Uint8Array} data
 	 */
-	constructor(name, handler, data) {
+	//data, tagNum, off, bigendian, count
+	constructor(name, tagNum, bigEndian, count, handler, data) {
 		this.name = name
 		this.handler = handler
-		this.parsedData = handler.decode(data)
+		this.parsedData = handler.decode(data, tagNum, 0, bigEndian, count)
 	}
 
 	toString() {

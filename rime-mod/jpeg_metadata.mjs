@@ -57,19 +57,20 @@ function consolidateUint8Array(arrays) {
  */
 function parseIFD(data, tiffStart, ifdStart, bigEndian, destParsed, destRaw, tagLookup = TIFF_TAGS) {
 	const ifdLength = readUint16(data, tiffStart + ifdStart, bigEndian)
+	const baseOff = tiffStart + ifdStart + 2
 
 	for (let i = 0; i < ifdLength; i++) {
-		const offset = 2 + i * 12 // tagID (2), tagNum (2), valueCount (4), value (4)
-		const tagID = readUint16(data, ifdStart + offset, bigEndian)
-		const tagDType = readUint16(data, ifdStart + offset + 2, bigEndian)
-		const valueCount = readUint32(data, ifdStart + offset + 4, bigEndian)
+		const offset = i * 12 // tagID (2), tagNum (2), valueCount (4), value (4)
+		const tagID = readUint16(data, baseOff + offset, bigEndian)
+		const tagDType = readUint16(data, baseOff + offset + 2, bigEndian)
+		const valueCount = readUint32(data, baseOff + offset + 4, bigEndian)
 		const elementSize = getElementSize(tagDType) * valueCount
 		let valueData = undefined
 
 		if (elementSize <= 4) {
-			valueData = data.slice(ifdStart + offset + 8, ifdStart + offset + 8 + elementSize)
+			valueData = data.slice(baseOff + offset + 8, baseOff + offset + 8 + elementSize)
 		} else {
-			const valueOffset = readUint32(data, ifdStart + offset + 8, bigEndian)
+			const valueOffset = readUint32(data, baseOff + offset + 8, bigEndian)
 			valueData = data.slice(tiffStart + valueOffset, tiffStart + valueOffset + elementSize)
 		}
 
@@ -77,7 +78,7 @@ function parseIFD(data, tiffStart, ifdStart, bigEndian, destParsed, destRaw, tag
 			const tagInfo = tagLookup.get(tagID)
 
 			if (tagInfo.handler.accept(tagDType)) {
-				destParsed[tagID] = new ParsedIFDData(tagInfo.name, tagInfo.handler, valueData)
+				destParsed[tagID] = new ParsedIFDData(tagInfo.name, tagDType, bigEndian, valueCount, tagInfo.handler, valueData)
 			} else {
 				destRaw[tagID] = new RawIFDData(tagDType, valueCount, valueData)
 			}
@@ -201,6 +202,7 @@ export class JPEGMetadata extends Metadata {
 		if (EXIF_IFD_ID in this.parsedTiffData[0]) {
 			const exifIFDOffset = this.parsedTiffData[0][EXIF_IFD_ID].parsedData[0]
 			parseIFD(exifData, EXIF_IDENTIFIER.length, exifIFDOffset, this.bigEndian, this.parsedExifData, this.rawExifData)
+			delete this.parsedTiffData[0][EXIF_IFD_ID]
 		}
 
 		// TODO: GPS IFD

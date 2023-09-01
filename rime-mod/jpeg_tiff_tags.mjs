@@ -47,8 +47,7 @@ class ExposureTimeTypeHandler extends RationalTypeHandler {
 	 * @param {Fraction[]} data
 	 */
 	toReadable(data) {
-		const exposureTime = data[0].n / data[0].d
-		return `${exposureTime} seconds`
+		return `${data[0].n}/${data[0].d} seconds`
 	}
 }
 
@@ -58,7 +57,7 @@ class FNumberTypeHandler extends RationalTypeHandler {
 	 */
 	toReadable(data) {
 		const f = data[0].n / data[0].d
-		return `f/${exposureTime}`
+		return `f/${f}`
 	}
 }
 
