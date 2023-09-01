@@ -1,6 +1,13 @@
 import { loadMetadata } from "./rime-mod/main.mjs";
 import { Metadata } from "./rime-mod/metadata.mjs";
 
+/**
+ * @typedef {{id: string, name: string, value: string, level: number}} MetadataResult
+ */
+
+const METADATA_ID_PREFIX = "metadata__"
+const DEFAULT_SELECTED_LEVEL = 2
+
 class LayoutManager {
 	constructor() {
 		/** @type {((file: File) => void)|null} */
@@ -179,10 +186,90 @@ class LayoutManager {
 		this.inputAreaInfo.style.removeProperty("height")
 		this.inputAreaInfo.style.visibility = "hidden"
 	}
+
+	showMetadataInfo() {
+		this.metadataInfoListSection.style.removeProperty("display")
+	}
+
+	/**
+	 * @param {MetadataResult[]} metadata 
+	 */
+	setTableData(metadata) {
+		/** @type {HTMLTableRowElement[]} */
+		const rows = []
+
+		for (const md of metadata) {
+			const selected = md.level >= DEFAULT_SELECTED_LEVEL
+			const metadataId = METADATA_ID_PREFIX + md.id
+
+			const tr = document.createElement("tr")
+			tr.setAttribute("data-row-id", metadataId)
+			tr.setAttribute("aria-selected", selected.toString())
+			tr.classList.add("mdc-data-table__row")
+			if (selected) {
+				tr.classList.add("mdc-data-table__row--selected")
+			}
+
+			const td1 = document.createElement("td")
+			td1.classList.add("mdc-data-table__cell", "mdc-data-table__cell--checkbox")
+
+			const div1 = document.createElement("div")
+			div1.classList.add("mdc-checkbox", "mdc-data-table__row-checkbox")
+			if (selected) {
+				div1.classList.add("mdc-checkbox--selected")
+			}
+
+			const checkbox = document.createElement("input")
+			checkbox.type = "checkbox"
+			checkbox.checked = selected
+			checkbox.disabled = md.level == 0
+			checkbox.classList.add("mdc-checkbox__native-control")
+			checkbox.setAttribute("aria-labelledby", metadataId)
+
+			const div2 = document.createElement("div")
+			div2.classList.add("mdc-checkbox__background")
+
+			const svg = document.createElement("svg")
+			svg.setAttribute("viewBox", "0 0 24 24")
+			svg.classList.add("mdc-checkbox__checkmark")
+
+			const svgPath = document.createElement("path")
+			svgPath.classList.add("mdc-checkbox__checkmark-path")
+			svgPath.setAttribute("fill", "none")
+			svgPath.setAttribute("d", "M1.73,12.91 8.1,19.28 22.79,4.59")
+
+			const div3 = document.createElement("div")
+			div3.classList.add("mdc-checkbox__mixedmark")
+
+			const div4 = document.createElement("div")
+			div4.classList.add("mdc-checkbox__ripple")
+
+			const th = document.createElement("th")
+			th.id = metadataId
+			th.textContent = md.name
+			th.setAttribute("scope", "row")
+			th.classList.add("mdc-data-table__cell")
+
+			const td2 = document.createElement("td")
+			td2.textContent = md.value
+			td2.classList.add("mdc-data-table__cell")
+
+			svg.replaceChildren(svgPath)
+			div2.replaceChildren(svg, div3)
+			div1.replaceChildren(checkbox, div2, div4)
+			td1.replaceChildren(div1)
+			tr.replaceChildren(td1, th, td2)
+			rows.push(tr)
+		}
+
+		this.metadataListTableBody.replaceChildren(...rows)
+		this.metadataListTableMDC.layout()
+	}
 }
 
 function main() {
 	const layout = new LayoutManager()
+	window.currentLayout = layout
 
 	// Initialize ripple
 	for (const elem of document.querySelectorAll(".mdc-ripple-surface, .mdc-button")) {
@@ -207,6 +294,8 @@ function main() {
 					window.currentFilename = currentFilename
 
 					layout.showInputImage(file)
+					layout.setTableData(currentState.getMetadata())
+					layout.showMetadataInfo()
 				} catch (e) {
 					layout.showError(e)
 				}
