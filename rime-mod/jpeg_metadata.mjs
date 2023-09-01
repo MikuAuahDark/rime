@@ -207,11 +207,11 @@ export class JPEGMetadata extends Metadata {
 
 		// TODO: GPS IFD
 		if (GPS_IFD_ID in this.parsedTiffData[0]) {
-			delete this.parsedExifData[0][GPS_IFD_ID]
+			delete this.parsedTiffData[0][GPS_IFD_ID]
 		}
 
 		if (INTEROP_IFD_ID in this.parsedTiffData[0]) {
-			delete this.parsedExifData[0][INTEROP_IFD_ID]
+			delete this.parsedTiffData[0][INTEROP_IFD_ID]
 		}
 	}
 
