@@ -198,11 +198,19 @@ export class JPEGMetadata extends Metadata {
 		// Parse TIFF
 		this.bigEndian = parseTIFF(exifData, 6, this.parsedTiffData, this.rawTiffData)
 
+		if (this.parsedTiffData.length == 0 || Object.keys(this.parsedTiffData[0]).length == 0) {
+			throw new Error("No EXIF data present.")
+		}
+
 		// Check EXIF IFD
 		if (EXIF_IFD_ID in this.parsedTiffData[0]) {
 			const exifIFDOffset = this.parsedTiffData[0][EXIF_IFD_ID].parsedData[0]
 			parseIFD(exifData, EXIF_IDENTIFIER.length, exifIFDOffset, this.bigEndian, this.parsedExifData, this.rawExifData)
 			delete this.parsedTiffData[0][EXIF_IFD_ID]
+		}
+
+		if (Object.keys(this.parsedExifData).length == 0) {
+			throw new Error("No EXIF data present.")
 		}
 
 		// TODO: GPS IFD
