@@ -1,8 +1,10 @@
 import { loadMetadata } from "./rime-mod/main.mjs";
 import { Metadata } from "./rime-mod/metadata.mjs";
+import { metadataToCSV } from "./rime-mod/metadata_to_csv.mjs";
 
 /**
  * @typedef {{id: string, name: string, value: string, level: number}} MetadataResult
+ * @typedef {{buffer: ArrayBuffer, name: string}} ExportCSVResult
  */
 
 const METADATA_ID_PREFIX = "metadata__"
@@ -17,6 +19,10 @@ class LayoutManager {
 		this.inputObjectURL = null
 		/** @type {string|null} */
 		this.outputObjectURL = null
+		/** @type {string|null} */
+		this.csvObjectURL = null
+		/** @type {(() => ExportCSVResult|null)|null} */
+		this.exportCSV = null
 
 		/** @type {HTMLDivElement} */
 		this.inputArea = document.getElementById("input_area")
@@ -26,6 +32,8 @@ class LayoutManager {
 		this.inputAreaInfo = document.getElementById("input_area_info")
 		/** @type {HTMLInputElement} */
 		this.inputFile = document.getElementById("input_file")
+		/** @type {HTMLAnchorElement} */
+		this.downloadClicker = document.getElementById("download_clicker")
 		/** @type {HTMLElement} */
 		this.metadataInfoListSection = document.getElementById("metadata_info_list")
 		/** @type {HTMLTableElement} */
@@ -38,7 +46,7 @@ class LayoutManager {
 		this.imageResultSection = document.getElementById("image_result")
 		/** @type {HTMLImageElement} */
 		this.outputImage = document.getElementById("output_image")
-		/** @type {HTMLAnchorElement} */
+		/** @type {HTMLButtonElement} */
 		this.downloadImageButton = document.getElementById("download_image")
 
 		// Initialize styles
@@ -55,6 +63,13 @@ class LayoutManager {
 		this.inputArea.addEventListener("dragover", this.dragOver.bind(this))
 		this.inputArea.addEventListener("drop", this.dropEvent.bind(this))
 		this.inputFile.addEventListener("change", this.inputFileChange.bind(this))
+
+		/** @type {NodeListOf<HTMLButtonElement>} */
+		const buttons = document.querySelectorAll(".rime_buttons button")
+		for (let i = 0; i < buttons.length; i += 4) {
+			// Export CSV is first button
+			buttons[i].addEventListener("click", this.performExportCSV.bind(this))
+		}
 	}
 
 	/**
@@ -159,6 +174,13 @@ class LayoutManager {
 	 */
 	setProcessFileCallback(cb) {
 		this.processFile = cb
+	}
+
+	/**
+	 * @param {() => ExportCSVResult|null} cb
+	 */
+	setExportCSVCallback(cb) {
+		this.exportCSV = cb
 	}
 
 	showError(message) {
@@ -266,6 +288,22 @@ class LayoutManager {
 		this.metadataListTableBody.replaceChildren(...rows)
 		this.metadataListTableMDC.layout()
 	}
+
+	performExportCSV() {
+		const csv = this.exportCSV ? this.exportCSV() : null
+
+		if (csv !== null) {
+			if (this.csvObjectURL) {
+				URL.revokeObjectURL(this.csvObjectURL)
+			}
+
+			const blob = new Blob([csv.buffer], {type: "text/csv"})
+			this.csvObjectURL = URL.createObjectURL(blob)
+			this.downloadClicker.href = this.csvObjectURL
+			this.downloadClicker.download = csv.name
+			this.downloadClicker.click()
+		}
+	}
 }
 
 function main() {
@@ -281,6 +319,8 @@ function main() {
 	let currentState = null
 	/** @type {string|null} */
 	let currentFilename = null
+
+	const textEncoder = new TextEncoder()
 
 	layout.setProcessFileCallback((file) => {
 		file.arrayBuffer()
@@ -302,6 +342,17 @@ function main() {
 				}
 			})
 			.catch(layout.showError.bind(layout))
+	})
+	layout.setExportCSVCallback(() => {
+		if (!currentState || !currentFilename) {
+			return null
+		}
+
+		const csv = metadataToCSV(currentState)
+		return {
+			name: currentFilename + ".csv",
+			buffer: textEncoder.encode(csv).buffer
+		}
 	})
 }
 
