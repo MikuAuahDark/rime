@@ -87,7 +87,7 @@ function parseIFD(data, tiffStart, ifdStart, bigEndian, destParsed, destRaw, tag
 		}
 	}
 
-	return readUint32(data, ifdStart + 2 + ifdLength * 12, bigEndian)
+	return readUint32(data, baseOff + ifdLength * 12, bigEndian)
 }
 
 /**

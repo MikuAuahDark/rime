@@ -7,6 +7,7 @@ import { Metadata } from "./rime-mod/metadata.mjs";
 
 const METADATA_ID_PREFIX = "metadata__"
 const DEFAULT_SELECTED_LEVEL = 2
+const SVG_NAMESPACE = "http://www.w3.org/2000/svg"
 
 class LayoutManager {
 	constructor() {
@@ -229,11 +230,11 @@ class LayoutManager {
 			const div2 = document.createElement("div")
 			div2.classList.add("mdc-checkbox__background")
 
-			const svg = document.createElement("svg")
+			const svg = document.createElementNS(SVG_NAMESPACE, "svg");
 			svg.setAttribute("viewBox", "0 0 24 24")
 			svg.classList.add("mdc-checkbox__checkmark")
 
-			const svgPath = document.createElement("path")
+			const svgPath = document.createElementNS(SVG_NAMESPACE, "path")
 			svgPath.classList.add("mdc-checkbox__checkmark-path")
 			svgPath.setAttribute("fill", "none")
 			svgPath.setAttribute("d", "M1.73,12.91 8.1,19.28 22.79,4.59")
