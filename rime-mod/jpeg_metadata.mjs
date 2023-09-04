@@ -1,6 +1,6 @@
 import { Metadata } from "./metadata.mjs"
 import { TIFF_TAGS } from "./jpeg_tiff_tags.mjs"
-import { TagTypeHandler, RawIFDData, getElementSize, ParsedIFDData } from "./jpeg_tiff_tag_type.mjs"
+import { RawIFDData, getElementSize, ParsedIFDData } from "./jpeg_tiff_tag_type.mjs"
 import { readUint16, readUint32 } from "./binary_manipulation.mjs"
 import { EXIF_IDENTIFIER, EXIF_IFD_ID, GPS_IFD_ID, INTEROP_IFD_ID, MARKER_INVALID } from "./jpeg_const.mjs"
 

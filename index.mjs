@@ -44,7 +44,7 @@ class LayoutManager {
 		// Initialize styles
 		this.errorAlert = new mdc.snackbar.MDCSnackbar(document.querySelector(".mdc-snackbar"))
 		this.metadataListTableMDC = new mdc.dataTable.MDCDataTable(this.metadataListTable)
-	
+
 		// Initialize top bar
 		this.topBar = new mdc.topAppBar.MDCTopAppBar(document.querySelector(".mdc-top-app-bar"))
 
@@ -136,7 +136,7 @@ class LayoutManager {
 		}
 	}
 
-	
+
 	/**
 	 * @param {Event} e
 	 */

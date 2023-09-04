@@ -2,8 +2,7 @@
  * @typedef {{id: string, name: string, value: string, level: number}} MetadataResult
  */
 
-export class Metadata
-{
+export class Metadata {
 	/**
 	 * @param {Uint8Array} file File to parse.
 	 */
