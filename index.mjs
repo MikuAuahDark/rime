@@ -223,6 +223,7 @@ class LayoutManager {
 
 		for (const md of metadata) {
 			const selected = md.level >= DEFAULT_SELECTED_LEVEL
+			const disabled = md.level == 0
 			const metadataId = METADATA_ID_PREFIX + md.id
 
 			const tr = document.createElement("tr")
@@ -231,6 +232,8 @@ class LayoutManager {
 			tr.classList.add("mdc-data-table__row")
 			if (selected) {
 				tr.classList.add("mdc-data-table__row--selected")
+			} else if (disabled) {
+				tr.classList.add("rime_select_disabled")
 			}
 
 			const td1 = document.createElement("td")
@@ -245,7 +248,7 @@ class LayoutManager {
 			const checkbox = document.createElement("input")
 			checkbox.type = "checkbox"
 			checkbox.checked = selected
-			checkbox.disabled = md.level == 0
+			checkbox.disabled = disabled
 			checkbox.classList.add("mdc-checkbox__native-control")
 			checkbox.setAttribute("aria-labelledby", metadataId)
 
