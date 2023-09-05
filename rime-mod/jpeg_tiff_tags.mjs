@@ -44,20 +44,17 @@ function defineEnumHandler(extendsClass, values, defval = "Unknown") {
 
 class CopyrightTypeHandler extends ASCIITypeHandler {
 	/**
+	 * @param {string} s
+	 */
+	static filter(s) {
+		return s != " "
+	}
+	/**
 	 * @param {string} data
 	 */
 	toReadable(data) {
-		const copyright = data.split("\0")
+		const copyright = data.split("\0").filter(CopyrightTypeHandler.filter)
 		return copyright.join(". ")
-	}
-}
-
-class ExposureTimeTypeHandler extends RationalTypeHandler {
-	/**
-	 * @param {Fraction[]} data
-	 */
-	toReadable(data) {
-		return `${data[0].n}/${data[0].d} seconds`
 	}
 }
 
@@ -82,7 +79,7 @@ class SubjectDistanceTypeHandler extends RationalTypeHandler {
 			case 0:
 				return "Unknown"
 			default:
-				return (data[0].n / data[0].d).toString()
+				return `${data[0].n / data[0].d} meter(s)`
 		}
 	}
 }
@@ -132,3 +129,73 @@ defineTag(0x8822, "Exposure Program", 1, defineEnumHandler(ShortTypeHandler, {
 	7: "Portrait Mode (close-up)",
 	8: "Landscape Mode (background)"
 }, "Reserved"), "The class of the program used by the camera to set exposure when the picture is taken.")
+defineTag(0x8827, "Photo Sensitivity", 1, ShortTypeHandler,
+	"This tag indicates the sensitivity of the camera or input device when the image was shot. More specifically, " +
+	"it indicates one of the following values that are parameters defined in ISO 12232:\n" +
+	"Standard Output Sensitivity (SOS)\n" +
+	"Recommended Exposure Index (REI)\n" +
+	"ISO speed"
+)
+defineTag(0x9003, "Original Date & Time", 1, ASCIITypeHandler,
+	"The date and time when the original image data was generated. For a DSC (Digital Still Camera) the date and " +
+	"time the picture was taken are recorded."
+)
+defineTag(0x9004, "Digitized Date & Time", 1, ASCIITypeHandler,
+	"The date and time when the image was stored as digital data. If, for example, an image was captured by DSC " +
+	"(Digital Still Camera) and at the same time the file was recorded, then the \"Original Date & Time\" and " +
+	"\"Digitized Date & Time\" will have the same contents."
+)
+defineTag(0x9010, "Time Offset", 1, ASCIITypeHandler,
+	"A tag used to record the offset from UTC (the time difference from Universal Time Coordinated including " +
+	"Daylight Saving Time) of the time in the \"Date & Time\" tag."
+)
+defineTag(0x9011, "Original Time Offset", 1, ASCIITypeHandler,
+	"A tag used to record the offset from UTC (the time difference from Universal Time Coordinated including " +
+	"Daylight Saving Time) of the time in the \"Original Date & Time\" tag."
+)
+defineTag(0x9012, "Digitized Time Offset", 1, ASCIITypeHandler,
+	"A tag used to record the offset from UTC (the time difference from Universal Time Coordinated including " +
+	"Daylight Saving Time) of the time in the \"Digitized Date & Time\" tag."
+)
+//defineTag(0x9201, "Shutter Speed", 1, TODO)
+//defineTag(0x9202, "Aperture", 1, TODO)
+//defineTag(0x9203, "Brightness Value", 1, TODO)
+//defineTag(0x9204, "Exposure Bias", 1, TODO)
+//defineTag(0x9205, "Max Aperture", 1, TODO)
+defineTag(0x9206, "Subject Distance", 1, SubjectDistanceTypeHandler,
+	"The distance to the subject, in meters."
+)
+defineTag(0x9207, "Metering Mode", 1, defineEnumHandler(ShortTypeHandler, {
+	0: "Unknown",
+	1: "Average",
+	2: "Center Weighted Average",
+	3: "Spot",
+	4: "Multi-spot",
+	5: "Pattern",
+	6: "Partial",
+	255: "Other"
+}, "Reserved"), "Metering mode.")
+defineTag(0x9208, "Light Source", 1, defineEnumHandler(ShortTypeHandler, {
+	0: "Unknown",
+	1: "Daylight",
+	2: "Fluorescent",
+	3: "Tungsten (Incandescent Light)",
+	4: "Flash",
+	9: "Fine Weather",
+	10: "Cloudy Weather",
+	11: "Shade",
+	12: "Daylight Fluorescent (D 5700 - 7100K)",
+	13: "Day White Fluorescent (N 4600 - 5500K)",
+	14: "Cool white Fluorescent (W 3800 - 4500K)",
+	15: "White Fluorescent (WW 3250 - 3800K)",
+	16: "Warm white fluorescent (L 2600 - 3250K)",
+	17: "Standard Light A",
+	18: "Standard Light B",
+	19: "Standard Light C",
+	20: "D55",
+	21: "D65",
+	22: "D75",
+	23: "D50",
+	24: "ISO Studio Tungsten",
+	255: "Other"
+}, "Reserved"), "Kind of light source used to take the picture.")
