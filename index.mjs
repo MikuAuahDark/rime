@@ -1,9 +1,8 @@
 import { loadMetadata } from "./rime-mod/main.mjs";
-import { Metadata } from "./rime-mod/metadata.mjs";
+import { Metadata, MetadataResult } from "./rime-mod/metadata.mjs";
 import { metadataToCSV } from "./rime-mod/metadata_to_csv.mjs";
 
 /**
- * @typedef {{id: string, name: string, value: string, level: number}} MetadataResult
  * @typedef {{buffer: ArrayBuffer, name: string}} ExportCSVResult
  */
 

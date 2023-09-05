@@ -1,4 +1,4 @@
-import { Metadata } from "./metadata.mjs"
+import { Metadata, MetadataResult } from "./metadata.mjs"
 import { TIFF_TAGS } from "./jpeg_tiff_tags.mjs"
 import { RawIFDData, getElementSize, ParsedIFDData } from "./jpeg_tiff_tag_type.mjs"
 import { readUint16, readUint32 } from "./binary_manipulation.mjs"
@@ -78,7 +78,7 @@ function parseIFD(data, tiffStart, ifdStart, bigEndian, destParsed, destRaw, tag
 			const tagInfo = tagLookup.get(tagID)
 
 			if (tagInfo.handler.accept(tagDType)) {
-				destParsed[tagID] = new ParsedIFDData(tagInfo.name, tagDType, bigEndian, valueCount, tagInfo.handler, valueData)
+				destParsed[tagID] = new ParsedIFDData(tagInfo, tagDType, bigEndian, valueCount, valueData)
 			} else {
 				destRaw[tagID] = new RawIFDData(tagDType, valueCount, valueData)
 			}
@@ -116,7 +116,6 @@ function parseTIFF(data, offset, destParsed, destRaw) {
 	while (nextIFD != 0) {
 		const newDestParsed = {}
 		const newDestRaw = {}
-		/* +6 for EXIF header */
 		nextIFD = parseIFD(data, EXIF_IDENTIFIER.length, nextIFD, bigEndian, newDestParsed, newDestRaw)
 
 		destParsed.push(newDestParsed)
@@ -229,22 +228,12 @@ export class JPEGMetadata extends Metadata {
 
 		// Parsed TIFF IFD 0 first
 		for (const [key, value] of Object.entries(this.parsedTiffData[0])) {
-			result.push({
-				id: key,
-				name: value.name,
-				value: value.toString(),
-				level: 0
-			})
+			result.push(new MetadataResult(key, value.name, value.toString(), value.description, value.level))
 		}
 
 		// EXIF metadata
 		for (const [key, value] of Object.entries(this.parsedExifData)) {
-			result.push({
-				id: key,
-				name: value.name,
-				value: value.toString(),
-				level: 2
-			})
+			result.push(new MetadataResult(key, value.name, value.toString(), value.description, value.level))
 		}
 
 		return result

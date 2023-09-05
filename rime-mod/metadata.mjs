@@ -1,6 +1,19 @@
-/**
- * @typedef {{id: string, name: string, value: string, level: number}} MetadataResult
- */
+export class MetadataResult {
+	/**
+	 * @param {string} id 
+	 * @param {string} name 
+	 * @param {string} value 
+	 * @param {string} description 
+	 * @param {number} level 
+	 */
+	constructor(id, name, value, description, level) {
+		this.id = id
+		this.name = name
+		this.value = value
+		this.level = level
+		this.description = description
+	}
+}
 
 export class Metadata {
 	/**
