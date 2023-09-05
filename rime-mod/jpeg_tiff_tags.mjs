@@ -42,6 +42,22 @@ function defineEnumHandler(extendsClass, values, defval = "Unknown") {
 	}
 }
 
+/**
+ * @template {typeof ShortTypeHandler|typeof LongTypeHandler} T
+ * @param {T} extendsClass 
+ * @param {string} unit
+ */
+function defineUnitHandler(extendsClass, unit) {
+	return class extends extendsClass {
+		/**
+		 * @param {number[]} data
+		 */
+		toReadable(data) {
+			return super.toReadable(data) + " " + unit
+		}
+	}
+}
+
 class CopyrightTypeHandler extends ASCIITypeHandler {
 	/**
 	 * @param {string} s
@@ -84,8 +100,8 @@ class SubjectDistanceTypeHandler extends RationalTypeHandler {
 	}
 }
 
-defineTag(256, "Image Width", 0, ShortOrLongTypeHandler, "Image width, in pixels.")
-defineTag(257, "Image Height", 0, ShortOrLongTypeHandler, "Image height, in pixels.")
+defineTag(256, "Image Width", 0, defineUnitHandler(ShortOrLongTypeHandler, "pixels"), "Image width, in pixels.")
+defineTag(257, "Image Height", 0, defineUnitHandler(ShortOrLongTypeHandler, "pixels"), "Image height, in pixels.")
 defineTag(271, "Manufacturer", 2, ASCIITypeHandler, "Scanner manufacturer.")
 defineTag(272, "Model Name", 2, ASCIITypeHandler, "Scanner model name or number.")
 defineTag(274, "Orientation", 0, defineEnumHandler(ShortTypeHandler, {
@@ -116,7 +132,7 @@ defineTag(306, "Date & Time", 2, ASCIITypeHandler, "Date and time of image creat
 defineTag(0x8298, "Copyright", 1, CopyrightTypeHandler, "Copyright information of the image.")
 defineTag(0x8769, "ExifIFD", 0, LongTypeHandler)
 defineTag(0x8825, "GPSIFD", 0, LongTypeHandler)
-defineTag(0x829A, "Exposure Time", 1, ExposureTimeTypeHandler, "Exposure time, in seconds")
+defineTag(0x829A, "Exposure Time", 1, defineUnitHandler(RationalTypeHandler, "second(s)"), "Exposure time, in seconds")
 defineTag(0x829D, "f-number", 1, FNumberTypeHandler, "The F number")
 defineTag(0x8822, "Exposure Program", 1, defineEnumHandler(ShortTypeHandler, {
 	0: "Not Defined",
