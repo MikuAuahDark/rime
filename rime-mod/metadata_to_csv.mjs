@@ -5,7 +5,7 @@ import { Metadata } from "./metadata.mjs";
  * @param {string} text
  */
 function csvEscape(text) {
-	const enclose = text.indexOf("\r\n") != -1 || text.indexOf(",") != -1 || text.indexOf("\"") != -1
+	const enclose = text.indexOf("\r") != -1 || text.indexOf("\n") != -1 || text.indexOf(",") != -1 || text.indexOf("\"") != -1
 
 	if (enclose) {
 		return `\"${text.replace("\"", "\"\"")}\"`
