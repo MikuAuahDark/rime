@@ -49,7 +49,7 @@ class LayoutManager {
 		this.downloadImageButton = document.getElementById("download_image")
 
 		// Initialize styles
-		this.errorAlert = new mdc.snackbar.MDCSnackbar(document.querySelector(".mdc-snackbar"))
+		this.errorAlert = new mdc.snackbar.MDCSnackbar(document.getElementById("error_alert"))
 		this.metadataListTableMDC = new mdc.dataTable.MDCDataTable(this.metadataListTable)
 
 		// Initialize top bar
@@ -321,6 +321,8 @@ function main() {
 	let currentState = null
 	/** @type {string|null} */
 	let currentFilename = null
+	/** @type {MetadataResult[]|null} */
+	let currentMetadataList = null
 
 	const textEncoder = new TextEncoder()
 
@@ -333,11 +335,13 @@ function main() {
 				try {
 					currentState = loadMetadata(newFile)
 					currentFilename = file.name
+					currentMetadataList = currentState.getMetadata()
+
 					window.currentState = currentState
 					window.currentFilename = currentFilename
 
 					layout.showInputImage(file)
-					layout.setTableData(currentState.getMetadata())
+					layout.setTableData(currentMetadataList)
 					layout.showMetadataInfo()
 				} catch (e) {
 					layout.showError(e)
@@ -346,11 +350,11 @@ function main() {
 			.catch(layout.showError.bind(layout))
 	})
 	layout.setExportCSVCallback(() => {
-		if (!currentState || !currentFilename) {
+		if (!currentMetadataList) {
 			return null
 		}
 
-		const csv = metadataToCSV(currentState)
+		const csv = metadataToCSV(currentMetadataList)
 		return {
 			name: currentFilename + ".csv",
 			buffer: textEncoder.encode(csv).buffer

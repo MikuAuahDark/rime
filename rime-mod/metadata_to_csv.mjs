@@ -1,5 +1,5 @@
 // CSV conversion is based on RFC 4180
-import { Metadata } from "./metadata.mjs";
+import { MetadataResult } from "./metadata.mjs";
 
 /**
  * @param {string} text
@@ -15,16 +15,14 @@ function csvEscape(text) {
 }
 
 /**
- * @param {Metadata} metadata
+ * @param {MetadataResult[]} mds
  */
-export function metadataToCSV(metadata) {
-	const mds = metadata.getMetadata()
+export function metadataToCSV(mds) {
 	let result = "No.,Name,Value\r\n"
 	let i = 1
 
 	for (const md of mds) {
-		result += `${i},${csvEscape(md.name)},${csvEscape(md.value)}\r\n`
-		i++
+		result += `${i++},${csvEscape(md.name)},${csvEscape(md.value)}\r\n`
 	}
 
 	return result.substring(0, result.length - 2)
