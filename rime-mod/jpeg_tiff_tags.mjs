@@ -152,24 +152,24 @@ defineTag(0x8827, "Photo Sensitivity", 1, ShortTypeHandler,
 	"Recommended Exposure Index (REI)\n" +
 	"ISO speed"
 )
-defineTag(0x9003, "Original Date & Time", 1, ASCIITypeHandler,
+defineTag(0x9003, "Original Date & Time", 2, ASCIITypeHandler,
 	"The date and time when the original image data was generated. For a DSC (Digital Still Camera) the date and " +
 	"time the picture was taken are recorded."
 )
-defineTag(0x9004, "Digitized Date & Time", 1, ASCIITypeHandler,
+defineTag(0x9004, "Digitized Date & Time", 2, ASCIITypeHandler,
 	"The date and time when the image was stored as digital data. If, for example, an image was captured by DSC " +
 	"(Digital Still Camera) and at the same time the file was recorded, then the \"Original Date & Time\" and " +
 	"\"Digitized Date & Time\" will have the same contents."
 )
-defineTag(0x9010, "Time Offset", 1, ASCIITypeHandler,
+defineTag(0x9010, "Time Offset", 2, ASCIITypeHandler,
 	"A tag used to record the offset from UTC (the time difference from Universal Time Coordinated including " +
 	"Daylight Saving Time) of the time in the \"Date & Time\" tag."
 )
-defineTag(0x9011, "Original Time Offset", 1, ASCIITypeHandler,
+defineTag(0x9011, "Original Time Offset", 2, ASCIITypeHandler,
 	"A tag used to record the offset from UTC (the time difference from Universal Time Coordinated including " +
 	"Daylight Saving Time) of the time in the \"Original Date & Time\" tag."
 )
-defineTag(0x9012, "Digitized Time Offset", 1, ASCIITypeHandler,
+defineTag(0x9012, "Digitized Time Offset", 2, ASCIITypeHandler,
 	"A tag used to record the offset from UTC (the time difference from Universal Time Coordinated including " +
 	"Daylight Saving Time) of the time in the \"Digitized Date & Time\" tag."
 )
