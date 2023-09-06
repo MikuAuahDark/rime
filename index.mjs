@@ -9,6 +9,11 @@ import { metadataToCSV } from "./rime-mod/metadata_to_csv.mjs";
 const METADATA_ID_PREFIX = "metadata__"
 const DEFAULT_SELECTED_LEVEL = 2
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg"
+const METADATA_LEVEL_DESCRIPTION = [
+	"This metadata is essential, thus cannot be removed.",
+	"This metadata can be removed, but preserved by default.",
+	"It's recommended to remove this metadata."
+]
 
 class LayoutManager {
 	constructor() {
@@ -23,6 +28,8 @@ class LayoutManager {
 		/** @type {(() => ExportCSVResult|null)|null} */
 		this.exportCSV = null
 
+		/** @type {HTMLButtonElement} */
+		this.rimeAboutButton = document.getElementById("rime_about_button")
 		/** @type {HTMLDivElement} */
 		this.inputArea = document.getElementById("input_area")
 		/** @type {HTMLImageElement} */
@@ -47,13 +54,17 @@ class LayoutManager {
 		this.outputImage = document.getElementById("output_image")
 		/** @type {HTMLButtonElement} */
 		this.downloadImageButton = document.getElementById("download_image")
+		/** @type {HTMLHeadingElement} */
+		this.rimeMetadataDescriptionTitle = document.getElementById("rime_metadata_description_title")
+		/** @type {HTMLDivElement} */
+		this.rimeMetadataDescriptionContent = document.getElementById("rime_metadata_description_content")
 
 		// Initialize styles
+		this.topBar = new mdc.topAppBar.MDCTopAppBar(document.querySelector(".mdc-top-app-bar"))
 		this.errorAlert = new mdc.snackbar.MDCSnackbar(document.getElementById("error_alert"))
 		this.metadataListTableMDC = new mdc.dataTable.MDCDataTable(this.metadataListTable)
-
-		// Initialize top bar
-		this.topBar = new mdc.topAppBar.MDCTopAppBar(document.querySelector(".mdc-top-app-bar"))
+		this.rimeAboutDialog = new mdc.dialog.MDCDialog(document.getElementById("rime_about"))
+		this.rimeMetadataDescriptionDialog = new mdc.dialog.MDCDialog(document.getElementById("rime_metadata_description"))
 
 		// Initialize events
 		this.inputArea.addEventListener("click", this.inputAreaClick.bind(this))
@@ -62,6 +73,7 @@ class LayoutManager {
 		this.inputArea.addEventListener("dragover", this.dragOver.bind(this))
 		this.inputArea.addEventListener("drop", this.dropEvent.bind(this))
 		this.inputFile.addEventListener("change", this.inputFileChange.bind(this))
+		this.rimeAboutButton.addEventListener("click", this.rimeAboutDialog.open.bind(this.rimeAboutDialog))
 
 		/** @type {NodeListOf<HTMLButtonElement>} */
 		const buttons = document.querySelectorAll(".rime_buttons button")
@@ -279,11 +291,25 @@ class LayoutManager {
 			td2.textContent = md.value
 			td2.classList.add("mdc-data-table__cell")
 
+			const td3 = document.createElement("td")
+			td3.classList.add("mdc-data-table__cell", "rime_cell_help")
+
+			const button = document.createElement("button")
+			button.classList.add("mdc-icon-button", "material-icons")
+			
+			const div5 = document.createElement("div")
+			div5.classList.add("mdc-icon-button__ripple")
+
 			svg.replaceChildren(svgPath)
 			div2.replaceChildren(svg, div3)
 			div1.replaceChildren(checkbox, div2, div4)
 			td1.replaceChildren(div1)
-			tr.replaceChildren(td1, th, td2)
+			button.replaceChildren(div5, document.createTextNode("help"))
+			td3.replaceChildren(button)
+			tr.replaceChildren(td1, th, td2, td3);
+
+			(new mdc.ripple.MDCRipple(button)).unbounded = true
+			button.addEventListener("click", () => this.showMetadataDescription(md))
 			rows.push(tr)
 		}
 
@@ -299,12 +325,30 @@ class LayoutManager {
 				URL.revokeObjectURL(this.csvObjectURL)
 			}
 
-			const blob = new Blob([csv.buffer], {type: "text/csv"})
+			const blob = new Blob([csv.buffer], { type: "text/csv" })
 			this.csvObjectURL = URL.createObjectURL(blob)
 			this.downloadClicker.href = this.csvObjectURL
 			this.downloadClicker.download = csv.name
 			this.downloadClicker.click()
 		}
+	}
+
+	/**
+	 * @param {MetadataResult} md
+	 */
+	showMetadataDescription(md) {
+		const mdDesc = md.description.split("\n").map(document.createTextNode, document)
+		const descData = []
+
+		for (let i = 0; i < mdDesc.length; i++) {
+			descData.push(mdDesc[i], document.createElement("br"))
+		}
+
+		descData.push(document.createElement("br"), document.createTextNode(METADATA_LEVEL_DESCRIPTION[md.level]))
+
+		this.rimeMetadataDescriptionTitle.textContent = md.name
+		this.rimeMetadataDescriptionContent.replaceChildren(...descData)
+		this.rimeMetadataDescriptionDialog.open()
 	}
 }
 
@@ -313,6 +357,10 @@ function main() {
 	window.currentLayout = layout
 
 	// Initialize ripple
+	for (const elem of document.querySelectorAll(".mdc-icon-button")) {
+		const ripple = new mdc.ripple.MDCRipple(elem)
+		ripple.unbounded = true
+	}
 	for (const elem of document.querySelectorAll(".mdc-ripple-surface, .mdc-button")) {
 		mdc.ripple.MDCRipple.attachTo(elem)
 	}

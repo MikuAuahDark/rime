@@ -77,6 +77,11 @@
 				max-height: inherit;
 			}
 
+			.rime_cell_help {
+				width: 1px;
+				color: var(--mdc-theme-text-primary-on-background) !important;
+			}
+
 			.wide_button {
 				width: 100%;
 			}
@@ -89,7 +94,8 @@
 					<h1 class="mdc-top-app-bar__title">RIME</h1>
 				</section>
 				<section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-end">
-					<button class="material-icons mdc-top-app-bar__action-item mdc-icon-button" aria-label="About">
+					<button id="rime_about_button" class="material-icons mdc-top-app-bar__action-item mdc-icon-button" aria-label="About">
+						<div class="mdc-icon-button__ripple"></div>
 						info_outline
 					</button>
 				</section>
@@ -159,6 +165,7 @@
 									</th>
 									<th class="mdc-data-table__header-cell" role="columnheader" scope="col">Metadata Name</th>
 									<th class="mdc-data-table__header-cell" role="columnheader" scope="col">Metadata Value</th>
+									<th class="mdc-data-table__header-cell rime_cell_help" role="columnheader" scope="col"></th>
 								</tr>
 							</thead>
 							<tbody class="mdc-data-table__content" id="metadata_list">
@@ -217,6 +224,51 @@
 				</div>
 			</div>
 		</aside>
+		<div id="rime_about" class="mdc-dialog">
+			<div class="mdc-dialog__container">
+				<div class="mdc-dialog__surface" role="alertdialog" aria-modal="true" aria-labelledby="rime_about_title" aria-describedby="rime_about_content">
+					<h2 class="mdc-dialog__title" id="rime_about_title">About RIME</h2>
+					<div class="mdc-dialog__content" id="rime_about_content">
+						RIME is a progressive web application that reads and remove image metadata in your browser.
+						All images submitted does not leave your browser. It works without internet connection once
+						the web page/app is fully loaded.
+						<br>
+						<br>
+						The project is open-source and can be found on GitHub:
+						<a href="https://github.com/MikuAuahDark/rime" target="_blank">
+							https://github.com/MikuAuahDark/rime
+						</a>
+					</div>
+					<div class="mdc-dialog__actions">
+						<button type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="close">
+							<div class="mdc-button__ripple"></div>
+							<span class="mdc-button__label">Ok</span>
+						</button>
+					</div>
+				</div>
+			</div>
+			<div class="mdc-dialog__scrim"></div>
+		</div>
+		<div id="rime_metadata_description" class="mdc-dialog">
+			<div class="mdc-dialog__container">
+				<div class="mdc-dialog__surface" role="alertdialog" aria-modal="true" aria-labelledby="rime_metadata_description_title" aria-describedby="rime_metadata_description_content">
+					<h2 class="mdc-dialog__title" id="rime_metadata_description_title">Metadata Name</h2>
+					<div class="mdc-dialog__content" id="rime_metadata_description_content">
+						Metadata Description.
+						<br>
+						<br>
+						This metadata cannot be removed.
+					</div>
+					<div class="mdc-dialog__actions">
+						<button type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="close">
+							<div class="mdc-button__ripple"></div>
+							<span class="mdc-button__label">Ok</span>
+						</button>
+					</div>
+				</div>
+			</div>
+			<div class="mdc-dialog__scrim"></div>
+		</div>
 		<footer>
 			<div class="rime_container">
 				<p>This software is provided without warranty whatsover.</p>
