@@ -1,6 +1,8 @@
 import { Fraction } from "./fraction.mjs"
 import { readUint16, readUint32 } from "./binary_manipulation.mjs"
 
+export const TIFF_LONG = 4
+
 /**
  * @typedef {{type: number, buffer: Uint8Array, count: number}} TagEncodeResult
  */
@@ -65,6 +67,13 @@ export class ParsedIFDData {
 
 	toString() {
 		return this.handler.toReadable(this.parsedData)
+	}
+
+	/**
+	 * @param {boolean} bigEndian
+	 */
+	encode(bigEndian) {
+		return this.handler.encode(this.parsedData, bigEndian)
 	}
 }
 

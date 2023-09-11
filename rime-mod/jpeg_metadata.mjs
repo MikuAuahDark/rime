@@ -1,7 +1,7 @@
 import { Metadata, MetadataResult } from "./metadata.mjs"
 import { TIFF_TAGS } from "./jpeg_tiff_tags.mjs"
-import { RawIFDData, getElementSize, ParsedIFDData } from "./jpeg_tiff_tag_type.mjs"
-import { readUint16, readUint32 } from "./binary_manipulation.mjs"
+import { RawIFDData, getElementSize, ParsedIFDData, TIFF_LONG } from "./jpeg_tiff_tag_type.mjs"
+import { readUint16, readUint32, writeUint16, writeUint32 } from "./binary_manipulation.mjs"
 import { EXIF_IDENTIFIER, EXIF_IFD_ID, GPS_IFD_ID, INTEROP_IFD_ID, MARKER_INVALID } from "./jpeg_const.mjs"
 
 /**
@@ -237,6 +237,163 @@ export class JPEGMetadata extends Metadata {
 		}
 
 		return result
+	}
+
+	/**
+	 * @param {Set<string>} metadatas
+	 */
+	removeMetadata(metadatas) {
+		// Calculate TIFF IFD sizes
+		let totalAllIFD = 1 // +1 for EXIF IFD
+		/** @type {number[]} */
+		let totalIFD = []
+		for (let i = 0; i < this.rawTiffData.length; i++) {
+			let totalIFDCurrent = Number(i == 0) // +1 for EXIF IFD
+
+			for (const [key, value] of Object.entries(this.parsedTiffData[i])) {
+				const removed = (key in metadatas) && (value.level > 0)
+				totalAllIFD += !removed
+				totalIFDCurrent += !removed
+			}
+
+			// Unparsed is preserved by default.
+			const rawIFDs = Object.keys(this.rawTiffData[i]).length
+			totalAllIFD += rawIFDs
+			totalIFDCurrent += rawIFDs
+			totalIFD.push(totalIFDCurrent)
+		}
+
+		// Count EXIF
+		let totalExifIFD = 0
+		for (const [key, value] of Object.entries(this.parsedExifData)) {
+			const removed = (key in metadatas) && (value.level > 0)
+			totalAllIFD += !removed
+			totalExifIFD += !removed
+		}
+
+		const totalTIFFIFDSize = totalAllIFD * 12 + (this.rawTiffData.length + 1) * 8
+
+		// TIFF header
+		const tiffHeader = new Uint8Array(8)
+		writeUint16(tiffHeader, 0, false, this.bigEndian ? 0x4D4D : 0x4949)
+		writeUint16(tiffHeader, 2, this.bigEndian, 42)
+		writeUint32(tiffHeader, 4, this.bigEndian, 8) // 8 is TIFF start
+		dataBuffer.push(tiffHeader)
+
+		const tiffIFD = new Uint8Array(totalTIFFIFDSize)
+		let tiffIFDOffset = 0
+		/** @type Uint8Array[] */
+		const tiffData = []
+		let tiffDataOffset = 0
+
+		for (let i = 0; i < this.rawTiffData.length; i++) {
+			writeUint32(tiffIFD, tiffIFDOffset, this.bigEndian, totalIFD[i])
+			tiffIFDOffset += 4
+
+			for (const [key, value] of Object.entries(this.parsedTiffData[i])) {
+				const removed = (key in metadatas) && (value.level > 0)
+
+				if (!removed) {
+					const encoded = value.handler.encode(this.bigEndian)
+					writeUint16(tiffIFD, tiffIFDOffset, this.bigEndian, parseInt(key))
+					writeUint16(tiffIFD, tiffIFDOffset + 2, this.bigEndian, encoded.type)
+					writeUint32(tiffIFD, tiffIFDOffset + 4, this.bigEndian, encoded.count)
+
+					if (encoded.buffer.length <= 4) {
+						// Write to data directly
+						tiffIFD.set(encoded.buffer, tiffIFDOffset + 8)
+					} else {
+						// Allocate tiffData
+						writeUint32(tiffIFD, tiffIFDOffset + 8, this.bigEndian, tiffDataOffset + tiffHeader.length + totalTIFFIFDSize)
+						tiffData.push(encoded.buffer)
+						tiffDataOffset += encoded.buffer.length
+					}
+
+					tiffIFDOffset += 12
+				}
+			}
+
+			// Unparsed is preserved by default.
+			for (const [key, value] of Object.entries(this.rawTiffData[i])) {
+				writeUint16(tiffIFD, tiffIFDOffset, this.bigEndian, parseInt(key))
+				writeUint16(tiffIFD, tiffIFDOffset + 2, this.bigEndian, value.type)
+				writeUint32(tiffIFD, tiffIFDOffset + 4, this.bigEndian, value.count)
+
+				if (value.data.length <= 4) {
+					// Write to data directly
+					tiffIFD.set(value.data, tiffIFDOffset + 8)
+				} else {
+					// Allocate tiffData
+					writeUint32(tiffIFD, tiffIFDOffset + 8, this.bigEndian, tiffDataOffset + tiffHeader.length + totalTIFFIFDSize)
+					tiffData.push(value.data)
+					tiffDataOffset += value.data.length
+				}
+
+				tiffIFDOffset += 12
+			}
+
+			// Write EXIF IFD
+			if (i == 0) {
+				writeUint16(tiffIFD, tiffIFDOffset, this.bigEndian, EXIF_IFD_ID)
+				writeUint16(tiffIFD, tiffIFDOffset + 2, this.bigEndian, TIFF_LONG)
+				writeUint32(tiffIFD, tiffIFDOffset + 4, this.bigEndian, 1)
+				writeUint32(tiffIFD, tiffIFDOffset + 8, this.bigEndian, tiffDataOffset + 16) // + 12 (current IFD) + 4 (next IFD)
+				tiffIFDOffset += 12
+			}
+
+			// Next IFD
+			const next = (i + 1) == this.rawTiffData.length ? 0 : (tiffIFDOffset + 4)
+			writeUint32(tiffIFD, tiffIFDOffset, this.bigEndian, next)
+		}
+
+		// EXIF IFD
+		writeUint32(tiffIFD, tiffIFDOffset, this.bigEndian, totalExifIFD)
+		tiffIFDOffset += 4
+		for (const [key, value] of Object.entries(this.parsedExifData)) {
+			const removed = (key in metadatas) && (value.level > 0)
+
+			if (!removed) {
+				const encoded = value.handler.encode(this.bigEndian)
+				writeUint16(tiffIFD, tiffIFDOffset, this.bigEndian, parseInt(key))
+				writeUint16(tiffIFD, tiffIFDOffset + 2, this.bigEndian, encoded.type)
+				writeUint32(tiffIFD, tiffIFDOffset + 4, this.bigEndian, encoded.count)
+
+				if (encoded.buffer.length <= 4) {
+					// Write to data directly
+					tiffIFD.set(encoded.buffer, tiffIFDOffset + 8)
+				} else {
+					// Allocate tiffData
+					writeUint32(tiffIFD, tiffIFDOffset + 8, this.bigEndian, tiffDataOffset + tiffHeader.length + totalTIFFIFDSize)
+					tiffData.push(encoded.buffer)
+					tiffDataOffset += encoded.buffer.length
+				}
+
+				tiffIFDOffset += 12
+			}
+		}
+		writeUint32(tiffIFD, tiffIFDOffset, this.bigEndian, 0)
+
+		const app1MarkerData = consolidateUint8Array([
+			tiffHeader,
+			tiffIFD,
+			...tiffData
+		])
+		const result = new Uint8Array(4 + app1MarkerData.length)
+
+		if ((app1MarkerData.length + 2) > 65535) {
+			// TODO
+			throw new Error("EXIF data exceeded 64KiB")
+		}
+
+		writeUint16(result, 0, true, 0xFFE1)
+		writeUint16(result, 2, true, app1MarkerData.length + 2)
+		result.set(app1MarkerData, 4)
+
+		return consolidateUint8Array([
+			this.file.slice(0, this.startExifPos),
+			result,
+			this.file.slice(this.endExifPos)
+		])
 	}
 
 	/**
