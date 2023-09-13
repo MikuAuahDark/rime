@@ -27,6 +27,12 @@ class LayoutManager {
 		this.csvObjectURL = null
 		/** @type {(() => ExportCSVResult|null)|null} */
 		this.exportCSV = null
+		/** @type {((level:number) => Set<string>)|null} */
+		this.metadataSelectLevel = null
+		/** @type {((selected:Set<string>) => Uint8Array)|null} */
+		this.metadataDeleter = null
+		/** @type {{[key: string]: HTMLInputElement}} */
+		this.metadataListCheckbox = {}
 
 		/** @type {HTMLButtonElement} */
 		this.rimeAboutButton = document.getElementById("rime_about_button")
@@ -75,11 +81,21 @@ class LayoutManager {
 		this.inputFile.addEventListener("change", this.inputFileChange.bind(this))
 		this.rimeAboutButton.addEventListener("click", this.rimeAboutDialog.open.bind(this.rimeAboutDialog))
 
+		const exportCSV = this.performExportCSV.bind(this)
+		const selectAll = this.metadataLevelFunction(1)
+		const selectRecommended = this.metadataLevelFunction(2)
+		const clearSelection = this.metadataLevelFunction(0)
 		/** @type {NodeListOf<HTMLButtonElement>} */
 		const buttons = document.querySelectorAll(".rime_buttons button")
 		for (let i = 0; i < buttons.length; i += 4) {
 			// Export CSV is first button
-			buttons[i].addEventListener("click", this.performExportCSV.bind(this))
+			buttons[i].addEventListener("click", exportCSV)
+			// Clear Selection is second button
+			buttons[i + 1].addEventListener("click", clearSelection)
+			// Select Recommended is third button
+			buttons[i + 2].addEventListener("click", selectRecommended)
+			// Select All is fourth button
+			buttons[i + 3].addEventListener("click", selectAll)
 		}
 	}
 
@@ -231,6 +247,7 @@ class LayoutManager {
 	setTableData(metadata) {
 		/** @type {HTMLTableRowElement[]} */
 		const rows = []
+		this.metadataListCheckbox = {}
 
 		for (const md of metadata) {
 			const selected = md.level >= DEFAULT_SELECTED_LEVEL
@@ -311,6 +328,8 @@ class LayoutManager {
 			(new mdc.ripple.MDCRipple(button)).unbounded = true
 			button.addEventListener("click", () => this.showMetadataDescription(md))
 			rows.push(tr)
+
+			this.metadataListCheckbox[md.id] = checkbox
 		}
 
 		this.metadataListTableBody.replaceChildren(...rows)
@@ -349,6 +368,51 @@ class LayoutManager {
 		this.rimeMetadataDescriptionTitle.textContent = md.name
 		this.rimeMetadataDescriptionContent.replaceChildren(...descData)
 		this.rimeMetadataDescriptionDialog.open()
+	}
+
+	/**
+	 * @param {(level:number) => Set<string>} func
+	 */
+	setMetadataSelectionFunction(func) {
+		this.metadataSelectLevel = func
+	}
+
+	/**
+	 * @param {(selected:Set<string>) => Uint8Array} func
+	 */
+	setRemoveMetadataFunction(func) {
+		this.metadataDeleter = func
+	}
+
+	/**
+	 * @param {number} level
+	 */
+	selectMetadataLevel(level) {
+		if (this.metadataSelectLevel) {
+			/** @type {Set<string>|null} */
+			let selected = null
+
+			try {
+				selected = this.metadataSelectLevel(level)
+			} catch (e) {
+				this.showError(e)
+				return
+			}
+
+			for (const [metadataId, checkbox] of Object.entries(this.metadataListCheckbox)) {
+				if (checkbox.checked != selected.has(metadataId)) {
+					checkbox.click()
+				}
+			}
+		}
+	}
+
+	/**
+	 * @param {number} level
+	 */
+	metadataLevelFunction(level) {
+		const self = this
+		return () => self.selectMetadataLevel(level)
 	}
 }
 
@@ -407,6 +471,20 @@ function main() {
 			name: currentFilename + ".csv",
 			buffer: textEncoder.encode(csv).buffer
 		}
+	})
+	layout.setMetadataSelectionFunction((level) => {
+		/** @type Set<string> */
+		const result = new Set()
+
+		if (currentMetadataList && level > 0) {
+			for (const md of currentMetadataList) {
+				if (md.level > 0 && md.level >= level) {
+					result.add(md.id)
+				}
+			}
+		}
+
+		return result
 	})
 }
 
