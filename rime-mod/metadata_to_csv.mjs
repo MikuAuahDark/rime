@@ -8,7 +8,7 @@ function csvEscape(text) {
 	const enclose = text.indexOf("\r") != -1 || text.indexOf("\n") != -1 || text.indexOf(",") != -1 || text.indexOf("\"") != -1
 
 	if (enclose) {
-		return `\"${text.replace("\"", "\"\"")}\"`
+		return `\"${text.replace(/\"/g, "\"\"")}\"`
 	}
 
 	return text
