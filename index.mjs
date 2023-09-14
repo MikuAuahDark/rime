@@ -3,7 +3,7 @@ import { Metadata, MetadataResult } from "./rime-mod/metadata.mjs";
 import { metadataToCSV } from "./rime-mod/metadata_to_csv.mjs";
 
 /**
- * @typedef {{buffer: ArrayBuffer, name: string}} ExportCSVResult
+ * @typedef {{buffer: ArrayBuffer, name: string}} NamedBufferResult
  */
 
 const METADATA_ID_PREFIX = "metadata__"
@@ -24,12 +24,14 @@ class LayoutManager {
 		/** @type {string|null} */
 		this.outputObjectURL = null
 		/** @type {string|null} */
+		this.outputImageFilename = null
+		/** @type {string|null} */
 		this.csvObjectURL = null
-		/** @type {(() => ExportCSVResult|null)|null} */
+		/** @type {(() => NamedBufferResult|null)|null} */
 		this.exportCSV = null
 		/** @type {((level:number) => Set<string>)|null} */
 		this.metadataSelectLevel = null
-		/** @type {((selected:Set<string>) => Uint8Array)|null} */
+		/** @type {((selected:Set<string>) => NamedBufferResult)|null} */
 		this.metadataDeleter = null
 		/** @type {{[key: string]: HTMLInputElement}} */
 		this.metadataListCheckbox = {}
@@ -81,10 +83,12 @@ class LayoutManager {
 		this.inputFile.addEventListener("change", this.inputFileChange.bind(this))
 		this.rimeAboutButton.addEventListener("click", this.rimeAboutDialog.open.bind(this.rimeAboutDialog))
 
+		// Wire up buttons
 		const exportCSV = this.performExportCSV.bind(this)
 		const selectAll = this.metadataLevelFunction(1)
 		const selectRecommended = this.metadataLevelFunction(2)
 		const clearSelection = this.metadataLevelFunction(0)
+
 		/** @type {NodeListOf<HTMLButtonElement>} */
 		const buttons = document.querySelectorAll(".rime_buttons button")
 		for (let i = 0; i < buttons.length; i += 4) {
@@ -97,6 +101,8 @@ class LayoutManager {
 			// Select All is fourth button
 			buttons[i + 3].addEventListener("click", selectAll)
 		}
+
+		this.removeMetadataButton.addEventListener("click", this.performMetadataRemoval.bind(this))
 	}
 
 	/**
@@ -204,7 +210,7 @@ class LayoutManager {
 	}
 
 	/**
-	 * @param {() => ExportCSVResult|null} cb
+	 * @param {() => NamedBufferResult|null} cb
 	 */
 	setExportCSVCallback(cb) {
 		this.exportCSV = cb
@@ -336,6 +342,16 @@ class LayoutManager {
 		this.metadataListTableMDC.layout()
 	}
 
+	/**
+	 * @param {string} url
+	 * @param {string} filename
+	 */
+	performClickWithUrl(url, filename) {
+		this.downloadClicker.href = this.csvObjectURL
+		this.downloadClicker.download = csv.name
+		this.downloadClicker.click()
+	}
+
 	performExportCSV() {
 		const csv = this.exportCSV ? this.exportCSV() : null
 
@@ -346,9 +362,7 @@ class LayoutManager {
 
 			const blob = new Blob([csv.buffer], { type: "text/csv" })
 			this.csvObjectURL = URL.createObjectURL(blob)
-			this.downloadClicker.href = this.csvObjectURL
-			this.downloadClicker.download = csv.name
-			this.downloadClicker.click()
+			performClickWithUrl(this.csvObjectURL, csv.name)
 		}
 	}
 
@@ -413,6 +427,52 @@ class LayoutManager {
 	metadataLevelFunction(level) {
 		const self = this
 		return () => self.selectMetadataLevel(level)
+	}
+
+	performMetadataRemoval() {
+		if (this.metadataDeleter) {
+			// Get selected metadata.
+			/** @type {Set<string>} */
+			const selected = new Set()
+
+			for (const [key, value] of Object.entries(this.metadataListCheckbox)) {
+				if (value.checked) {
+					selected.add(key)
+				}
+			}
+
+			if (selected.size > 0) {
+				/** @type {NamedBufferResult|null} */
+				let removed = null
+				try {
+					removed = this.metadataDeleter(selected)
+
+					if (removed == null) {
+						throw new Error("assertion failed")
+					}
+				} catch (e) {
+					this.showError(e)
+					return
+				}
+
+				const url = URL.createObjectURL(removed.buffer)
+		
+				if (this.outputObjectURL) {
+					URL.revokeObjectURL(this.outputObjectURL)
+				}
+		
+				this.outputObjectURL = url
+				this.outputImage.src = url
+				this.outputImageFilename = removed.name
+				this.imageResultSection.style.removeProperty("display")
+			}
+		}
+	}
+
+	downloadOutputImage() {
+		if (this.outputObjectURL && this.outputImageFilename) {
+			this.performClickWithUrl(this.outputObjectURL, this.outputImageFilename)
+		}
 	}
 }
 
@@ -485,6 +545,16 @@ function main() {
 		}
 
 		return result
+	})
+	layout.setRemoveMetadataFunction((selected) => {
+		if (currentState && currentFilename) {
+			return {
+				name: currentFilename,
+				buffer: currentState.removeMetadata(selected).buffer
+			}
+		}
+
+		throw new Error("assertion failed")
 	})
 }
 
