@@ -4,6 +4,8 @@ import { RawIFDData, getElementSize, ParsedIFDData, TIFF_LONG } from "./jpeg_tif
 import { readUint16, readUint32, writeUint16, writeUint32 } from "./binary_manipulation.mjs"
 import { EXIF_IDENTIFIER, EXIF_IFD_ID, GPS_IFD_ID, INTEROP_IFD_ID, MARKER_INVALID } from "./jpeg_const.mjs"
 
+const EXIF_HEADER = new Uint8Array(EXIF_IDENTIFIER)
+
 /**
  * @param {Uint8Array} data 
  * @param {number} offset 
@@ -151,6 +153,10 @@ export class JPEGMetadata extends Metadata {
 		while (true) {
 			// Current `pos` is the marker, pos + 2 is the length
 			if (isInvalidMarker(file, pos)) {
+				if (exifFound) {
+					this.endExifPos = pos
+				}
+
 				break
 			}
 
@@ -271,15 +277,15 @@ export class JPEGMetadata extends Metadata {
 			totalExifIFD += !removed
 		}
 
-		const totalTIFFIFDSize = totalAllIFD * 12 + (this.rawTiffData.length + 1) * 8
+		const totalTIFFIFDSize = totalAllIFD * 12 + (this.rawTiffData.length + 1) * 6
 
 		// TIFF header
 		const tiffHeader = new Uint8Array(8)
 		writeUint16(tiffHeader, 0, false, this.bigEndian ? 0x4D4D : 0x4949)
 		writeUint16(tiffHeader, 2, this.bigEndian, 42)
 		writeUint32(tiffHeader, 4, this.bigEndian, 8) // 8 is TIFF start
-		dataBuffer.push(tiffHeader)
 
+		// TIFF IFDs
 		const tiffIFD = new Uint8Array(totalTIFFIFDSize)
 		let tiffIFDOffset = 0
 		/** @type Uint8Array[] */
@@ -287,14 +293,14 @@ export class JPEGMetadata extends Metadata {
 		let tiffDataOffset = 0
 
 		for (let i = 0; i < this.rawTiffData.length; i++) {
-			writeUint32(tiffIFD, tiffIFDOffset, this.bigEndian, totalIFD[i])
-			tiffIFDOffset += 4
+			writeUint16(tiffIFD, tiffIFDOffset, this.bigEndian, totalIFD[i])
+			tiffIFDOffset += 2
 
 			for (const [key, value] of Object.entries(this.parsedTiffData[i])) {
 				const removed = (key in metadatas) && (value.level > 0)
 
 				if (!removed) {
-					const encoded = value.handler.encode(this.bigEndian)
+					const encoded = value.encode(this.bigEndian)
 					writeUint16(tiffIFD, tiffIFDOffset, this.bigEndian, parseInt(key))
 					writeUint16(tiffIFD, tiffIFDOffset + 2, this.bigEndian, encoded.type)
 					writeUint32(tiffIFD, tiffIFDOffset + 4, this.bigEndian, encoded.count)
@@ -353,7 +359,7 @@ export class JPEGMetadata extends Metadata {
 			const removed = (key in metadatas) && (value.level > 0)
 
 			if (!removed) {
-				const encoded = value.handler.encode(this.bigEndian)
+				const encoded = value.encode(this.bigEndian)
 				writeUint16(tiffIFD, tiffIFDOffset, this.bigEndian, parseInt(key))
 				writeUint16(tiffIFD, tiffIFDOffset + 2, this.bigEndian, encoded.type)
 				writeUint32(tiffIFD, tiffIFDOffset + 4, this.bigEndian, encoded.count)
@@ -374,6 +380,7 @@ export class JPEGMetadata extends Metadata {
 		writeUint32(tiffIFD, tiffIFDOffset, this.bigEndian, 0)
 
 		const app1MarkerData = consolidateUint8Array([
+			EXIF_HEADER,
 			tiffHeader,
 			tiffIFD,
 			...tiffData
@@ -394,6 +401,10 @@ export class JPEGMetadata extends Metadata {
 			result,
 			this.file.slice(this.endExifPos)
 		])
+	}
+
+	mimeType() {
+		return "image/jpeg"
 	}
 
 	/**

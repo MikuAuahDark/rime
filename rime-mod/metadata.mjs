@@ -47,6 +47,15 @@ export class Metadata {
 		throw new Error("need to override removeMetadata")
 	}
 
+	/**
+	 * Get MIME type of the parser.
+	 * 
+	 * @returns {string} MIME type of the parser.
+	 */
+	mimeType() {
+		throw new Error("need to override mimeType")
+	}
+
 	static test() {
 		return false
 	}

@@ -1,5 +1,5 @@
 import { Fraction } from "./fraction.mjs"
-import { readUint16, readUint32 } from "./binary_manipulation.mjs"
+import { readUint16, readUint32, writeUint16, writeUint32 } from "./binary_manipulation.mjs"
 
 export const TIFF_LONG = 4
 

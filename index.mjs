@@ -3,7 +3,8 @@ import { Metadata, MetadataResult } from "./rime-mod/metadata.mjs";
 import { metadataToCSV } from "./rime-mod/metadata_to_csv.mjs";
 
 /**
- * @typedef {{buffer: ArrayBuffer, name: string}} NamedBufferResult
+ * @typedef {{buffer: ArrayBuffer, name: string}} ExportCSVResult
+ * @typedef {{buffer: ArrayBuffer, name: string, mime: string}} ImageRemovalResult
  */
 
 const METADATA_ID_PREFIX = "metadata__"
@@ -27,11 +28,11 @@ class LayoutManager {
 		this.outputImageFilename = null
 		/** @type {string|null} */
 		this.csvObjectURL = null
-		/** @type {(() => NamedBufferResult|null)|null} */
+		/** @type {(() => ExportCSVResult|null)|null} */
 		this.exportCSV = null
 		/** @type {((level:number) => Set<string>)|null} */
 		this.metadataSelectLevel = null
-		/** @type {((selected:Set<string>) => NamedBufferResult)|null} */
+		/** @type {((selected:Set<string>) => ImageRemovalResult)|null} */
 		this.metadataDeleter = null
 		/** @type {{[key: string]: HTMLInputElement}} */
 		this.metadataListCheckbox = {}
@@ -103,6 +104,7 @@ class LayoutManager {
 		}
 
 		this.removeMetadataButton.addEventListener("click", this.performMetadataRemoval.bind(this))
+		this.downloadImageButton.addEventListener("click", this.downloadOutputImage.bind(this))
 	}
 
 	/**
@@ -210,7 +212,7 @@ class LayoutManager {
 	}
 
 	/**
-	 * @param {() => NamedBufferResult|null} cb
+	 * @param {() => ExportCSVResult|null} cb
 	 */
 	setExportCSVCallback(cb) {
 		this.exportCSV = cb
@@ -230,6 +232,9 @@ class LayoutManager {
 		this.errorAlert.open()
 	}
 
+	/**
+	 * @param {File|Blob} buffer
+	 */
 	showInputImage(buffer) {
 		const url = URL.createObjectURL(buffer)
 		this.inputImage.src = url
@@ -347,8 +352,8 @@ class LayoutManager {
 	 * @param {string} filename
 	 */
 	performClickWithUrl(url, filename) {
-		this.downloadClicker.href = this.csvObjectURL
-		this.downloadClicker.download = csv.name
+		this.downloadClicker.href = url
+		this.downloadClicker.download = filename
 		this.downloadClicker.click()
 	}
 
@@ -392,7 +397,7 @@ class LayoutManager {
 	}
 
 	/**
-	 * @param {(selected:Set<string>) => Uint8Array} func
+	 * @param {(selected:Set<string>) => ImageRemovalResult} func
 	 */
 	setRemoveMetadataFunction(func) {
 		this.metadataDeleter = func
@@ -442,7 +447,7 @@ class LayoutManager {
 			}
 
 			if (selected.size > 0) {
-				/** @type {NamedBufferResult|null} */
+				/** @type {ImageRemovalResult|null} */
 				let removed = null
 				try {
 					removed = this.metadataDeleter(selected)
@@ -455,7 +460,8 @@ class LayoutManager {
 					return
 				}
 
-				const url = URL.createObjectURL(removed.buffer)
+				const blob = new Blob([removed.buffer], { type: removed.mime })
+				const url = URL.createObjectURL(blob)
 		
 				if (this.outputObjectURL) {
 					URL.revokeObjectURL(this.outputObjectURL)
@@ -550,7 +556,8 @@ function main() {
 		if (currentState && currentFilename) {
 			return {
 				name: currentFilename,
-				buffer: currentState.removeMetadata(selected).buffer
+				buffer: currentState.removeMetadata(selected).buffer,
+				mime: currentState.mimeType()
 			}
 		}
 
