@@ -456,13 +456,24 @@ export class ShortOrLongTypeHandler extends TagTypeHandler {
 	 * @param {boolean} bigendian
 	 */
 	encode(data, bigendian) {
-		let arr = new Uint8Array(data.length * 2)
+		let useLong = false
 
 		for (let i = 0; i < data.length; i++) {
-			writeUint16(arr, i * 2, bigendian, data[i])
+			if (data[i] > 65535) {
+				useLong = true
+				break
+			}
 		}
 
-		return { type: 3, buffer: arr, count: data.length }
+		const dataSize = useLong ? 4 : 2
+		const func = useLong ? writeUint32 : writeUint16
+		const arr = new Uint8Array(data.length * dataSize)
+
+		for (let i = 0; i < data.length; i++) {
+			func(arr, i * dataSize, bigendian, data[i])
+		}
+
+		return { type: 3 + useLong, buffer: arr, count: data.length }
 	}
 
 	/**
