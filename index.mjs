@@ -1,7 +1,8 @@
-import { loadMetadata } from "./rime-mod/main.mjs";
-import { Metadata, MetadataResult } from "./rime-mod/metadata.mjs";
-import { metadataToCSV } from "./rime-mod/metadata_to_csv.mjs";
+import { loadMetadata } from "./rime-mod/main.mjs"
+import { Metadata, MetadataResult } from "./rime-mod/metadata.mjs"
+import { metadataToCSV } from "./rime-mod/metadata_to_csv.mjs"
 
+/* global mdc */
 /**
  * @typedef {{buffer: ArrayBuffer, name: string}} ExportCSVResult
  * @typedef {{buffer: ArrayBuffer, name: string, mime: string}} ImageRemovalResult
@@ -107,10 +108,7 @@ class LayoutManager {
 		this.downloadImageButton.addEventListener("click", this.downloadOutputImage.bind(this))
 	}
 
-	/**
-	 * @param {MouseEvent} e
-	 */
-	inputAreaClick(e) {
+	inputAreaClick() {
 		this.inputFile.click()
 	}
 
@@ -294,7 +292,7 @@ class LayoutManager {
 			const div2 = document.createElement("div")
 			div2.classList.add("mdc-checkbox__background")
 
-			const svg = document.createElementNS(SVG_NAMESPACE, "svg");
+			const svg = document.createElementNS(SVG_NAMESPACE, "svg")
 			svg.setAttribute("viewBox", "0 0 24 24")
 			svg.classList.add("mdc-checkbox__checkmark")
 
@@ -367,7 +365,7 @@ class LayoutManager {
 
 			const blob = new Blob([csv.buffer], { type: "text/csv" })
 			this.csvObjectURL = URL.createObjectURL(blob)
-			performClickWithUrl(this.csvObjectURL, csv.name)
+			this.performClickWithUrl(this.csvObjectURL, csv.name)
 		}
 	}
 

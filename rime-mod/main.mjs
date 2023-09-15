@@ -1,5 +1,5 @@
-import { JPEGMetadata } from "./jpeg_metadata.mjs";
-import { Metadata } from "./metadata.mjs";
+import { JPEGMetadata } from "./jpeg_metadata.mjs"
+import { Metadata } from "./metadata.mjs"
 
 /**
  * @type {(typeof Metadata)[]}

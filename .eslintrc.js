@@ -40,5 +40,12 @@ module.exports = {
 			"never"
 		],
 		"no-unused-vars": 1,
-	}
+		"no-constant-condition": [
+			"error",
+			{"checkLoops": false},
+		]
+	},
+	"ignorePatterns": [
+		"rime-mod/fraction.mjs"
+	]
 }
