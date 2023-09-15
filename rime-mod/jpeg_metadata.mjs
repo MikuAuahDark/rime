@@ -257,7 +257,7 @@ export class JPEGMetadata extends Metadata {
 			let totalIFDCurrent = Number(i == 0) // +1 for EXIF IFD
 
 			for (const [key, value] of Object.entries(this.parsedTiffData[i])) {
-				const removed = (key in metadatas) && (value.level > 0)
+				const removed = (metadatas.has(key)) && (value.level > 0)
 				totalAllIFD += !removed
 				totalIFDCurrent += !removed
 			}
@@ -272,7 +272,7 @@ export class JPEGMetadata extends Metadata {
 		// Count EXIF
 		let totalExifIFD = 0
 		for (const [key, value] of Object.entries(this.parsedExifData)) {
-			const removed = (key in metadatas) && (value.level > 0)
+			const removed = (metadatas.has(key)) && (value.level > 0)
 			totalAllIFD += !removed
 			totalExifIFD += !removed
 		}
@@ -291,13 +291,15 @@ export class JPEGMetadata extends Metadata {
 		/** @type Uint8Array[] */
 		const tiffData = []
 		let tiffDataOffset = 0
+		const exifIFD = new Uint8Array(totalExifIFD * 12 + 6)
 
 		for (let i = 0; i < this.rawTiffData.length; i++) {
+			let currentWrittenIFD = 0
 			writeUint16(tiffIFD, tiffIFDOffset, this.bigEndian, totalIFD[i])
 			tiffIFDOffset += 2
 
 			for (const [key, value] of Object.entries(this.parsedTiffData[i])) {
-				const removed = (key in metadatas) && (value.level > 0)
+				const removed = (metadatas.has(key)) && (value.level > 0)
 
 				if (!removed) {
 					const encoded = value.encode(this.bigEndian)
@@ -315,6 +317,7 @@ export class JPEGMetadata extends Metadata {
 						tiffDataOffset += encoded.buffer.length
 					}
 
+					currentWrittenIFD++
 					tiffIFDOffset += 12
 				}
 			}
@@ -335,6 +338,7 @@ export class JPEGMetadata extends Metadata {
 					tiffDataOffset += value.data.length
 				}
 
+				currentWrittenIFD++
 				tiffIFDOffset += 12
 			}
 
@@ -343,41 +347,51 @@ export class JPEGMetadata extends Metadata {
 				writeUint16(tiffIFD, tiffIFDOffset, this.bigEndian, EXIF_IFD_ID)
 				writeUint16(tiffIFD, tiffIFDOffset + 2, this.bigEndian, TIFF_LONG)
 				writeUint32(tiffIFD, tiffIFDOffset + 4, this.bigEndian, 1)
-				writeUint32(tiffIFD, tiffIFDOffset + 8, this.bigEndian, tiffDataOffset + 16) // + 12 (current IFD) + 4 (next IFD)
+
+				writeUint32(tiffIFD, tiffIFDOffset + 8, this.bigEndian, tiffDataOffset + tiffHeader.length + totalTIFFIFDSize)
+				tiffData.push(exifIFD)
+
 				tiffIFDOffset += 12
+				tiffDataOffset += exifIFD.length
+				currentWrittenIFD++
 			}
 
+			console.assert(currentWrittenIFD == totalIFD[i], new Error(`current written IFD not equal with IFD ${i}`))
+
 			// Next IFD
-			const next = (i + 1) == this.rawTiffData.length ? 0 : (tiffIFDOffset + 4)
+			const next = (i + 1) == this.rawTiffData.length ? 0 : (tiffIFDOffset + 4 + tiffHeader.length)
 			writeUint32(tiffIFD, tiffIFDOffset, this.bigEndian, next)
+			tiffIFDOffset += 4
 		}
 
 		// EXIF IFD
-		writeUint32(tiffIFD, tiffIFDOffset, this.bigEndian, totalExifIFD)
-		tiffIFDOffset += 4
+		let exifIFDOffset = 0
+		writeUint16(exifIFD, 0, this.bigEndian, totalExifIFD)
+		exifIFDOffset += 2
+
 		for (const [key, value] of Object.entries(this.parsedExifData)) {
-			const removed = (key in metadatas) && (value.level > 0)
+			const removed = (metadatas.has(key)) && (value.level > 0)
 
 			if (!removed) {
 				const encoded = value.encode(this.bigEndian)
-				writeUint16(tiffIFD, tiffIFDOffset, this.bigEndian, parseInt(key))
-				writeUint16(tiffIFD, tiffIFDOffset + 2, this.bigEndian, encoded.type)
-				writeUint32(tiffIFD, tiffIFDOffset + 4, this.bigEndian, encoded.count)
+				writeUint16(exifIFD, exifIFDOffset, this.bigEndian, parseInt(key))
+				writeUint16(exifIFD, exifIFDOffset + 2, this.bigEndian, encoded.type)
+				writeUint32(exifIFD, exifIFDOffset + 4, this.bigEndian, encoded.count)
 
 				if (encoded.buffer.length <= 4) {
 					// Write to data directly
-					tiffIFD.set(encoded.buffer, tiffIFDOffset + 8)
+					exifIFD.set(encoded.buffer, exifIFDOffset + 8)
 				} else {
 					// Allocate tiffData
-					writeUint32(tiffIFD, tiffIFDOffset + 8, this.bigEndian, tiffDataOffset + tiffHeader.length + totalTIFFIFDSize)
+					writeUint32(exifIFD, exifIFDOffset + 8, this.bigEndian, tiffDataOffset + tiffHeader.length + totalTIFFIFDSize)
 					tiffData.push(encoded.buffer)
 					tiffDataOffset += encoded.buffer.length
 				}
 
-				tiffIFDOffset += 12
+				exifIFDOffset += 12
 			}
 		}
-		writeUint32(tiffIFD, tiffIFDOffset, this.bigEndian, 0)
+		writeUint32(exifIFD, exifIFDOffset, this.bigEndian, 0)
 
 		const app1MarkerData = consolidateUint8Array([
 			EXIF_HEADER,
