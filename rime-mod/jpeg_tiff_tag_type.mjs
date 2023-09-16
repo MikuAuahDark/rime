@@ -406,18 +406,32 @@ export class UndefinedTypeHandler extends TagTypeHandler {
 		let result = []
 
 		for (const n of data) {
-			if (n == 13) {
-				result.push("\\r")
-			} else if (n == 10) {
-				result.push("\\n")
-			} else if (n < 32 || n > 127) {
-				result.push("\\x", n.toString(16).toUpperCase())
-			} else {
-				result.push(String.fromCharCode(n))
+			switch (n) {
+				case 0:
+					result.push("\\0")
+					break
+				case 9:
+					result.push("\\t")
+					break
+				case 10:
+					result.push("\\n")
+					break
+				case 13:
+					result.push("\\r")
+					break
+				case 34:
+					result.push("\\\"")
+					break
+				default:
+					if (n < 32 || n > 127) {
+						result.push("\\x", n.toString(16).toUpperCase())
+					} else {
+						result.push(String.fromCharCode(n))
+					}
 			}
 		}
 
-		return result.join("")
+		return `"${result.join("")}"`
 	}
 }
 
