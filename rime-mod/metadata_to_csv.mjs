@@ -1,13 +1,26 @@
 // CSV conversion is based on RFC 4180
 import { MetadataResult } from "./metadata.mjs"
 
+const CSV_NEED_ESCAPE = ["\r", "\n", ",", "\""]
+
+/**
+ * @param {string} text
+ */
+function needsEscape(text) {
+	for (const char of CSV_NEED_ESCAPE) {
+		if (text.includes(char)) {
+			return true
+		}
+	}
+
+	return false
+}
+
 /**
  * @param {string} text
  */
 function csvEscape(text) {
-	const enclose = text.indexOf("\r") != -1 || text.indexOf("\n") != -1 || text.indexOf(",") != -1 || text.indexOf("\"") != -1
-
-	if (enclose) {
+	if (needsEscape(text)) {
 		return `"${text.replace(/"/g, "\"\"")}"`
 	}
 
