@@ -424,7 +424,7 @@ export class UndefinedTypeHandler extends TagTypeHandler {
 					break
 				default:
 					if (n < 32 || n > 127) {
-						result.push("\\x", n.toString(16).toUpperCase())
+						result.push("\\x", n.toString(16).toUpperCase().padStart(2, "0"))
 					} else {
 						result.push(String.fromCharCode(n))
 					}
