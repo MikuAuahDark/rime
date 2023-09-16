@@ -1,3 +1,5 @@
+/* eslint-disable no-unused-vars */
+
 export class MetadataResult {
 	/**
 	 * @param {string} id 

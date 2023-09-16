@@ -210,7 +210,14 @@ export class JPEGMetadata extends Metadata {
 		// Check EXIF IFD
 		if (EXIF_IFD_ID in this.parsedTiffData[0]) {
 			const exifIFDOffset = this.parsedTiffData[0][EXIF_IFD_ID].parsedData[0]
-			parseIFD(exifData, EXIF_IDENTIFIER.length, exifIFDOffset, this.bigEndian, this.parsedExifData, this.rawExifData)
+			parseIFD(
+				exifData,
+				EXIF_IDENTIFIER.length,
+				exifIFDOffset,
+				this.bigEndian,
+				this.parsedExifData,
+				this.rawExifData
+			)
 			delete this.parsedTiffData[0][EXIF_IFD_ID]
 		}
 
@@ -312,7 +319,12 @@ export class JPEGMetadata extends Metadata {
 						tiffIFD.set(encoded.buffer, tiffIFDOffset + 8)
 					} else {
 						// Allocate tiffData
-						writeUint32(tiffIFD, tiffIFDOffset + 8, this.bigEndian, tiffDataOffset + tiffHeader.length + totalTIFFIFDSize)
+						writeUint32(
+							tiffIFD,
+							tiffIFDOffset + 8,
+							this.bigEndian,
+							tiffDataOffset + tiffHeader.length + totalTIFFIFDSize
+						)
 						tiffData.push(encoded.buffer)
 						tiffDataOffset += encoded.buffer.length
 					}
@@ -333,7 +345,12 @@ export class JPEGMetadata extends Metadata {
 					tiffIFD.set(value.data, tiffIFDOffset + 8)
 				} else {
 					// Allocate tiffData
-					writeUint32(tiffIFD, tiffIFDOffset + 8, this.bigEndian, tiffDataOffset + tiffHeader.length + totalTIFFIFDSize)
+					writeUint32(
+						tiffIFD,
+						tiffIFDOffset + 8,
+						this.bigEndian,
+						tiffDataOffset + tiffHeader.length + totalTIFFIFDSize
+					)
 					tiffData.push(value.data)
 					tiffDataOffset += value.data.length
 				}
@@ -348,7 +365,11 @@ export class JPEGMetadata extends Metadata {
 				writeUint16(tiffIFD, tiffIFDOffset + 2, this.bigEndian, TIFF_LONG)
 				writeUint32(tiffIFD, tiffIFDOffset + 4, this.bigEndian, 1)
 
-				writeUint32(tiffIFD, tiffIFDOffset + 8, this.bigEndian, tiffDataOffset + tiffHeader.length + totalTIFFIFDSize)
+				writeUint32(
+					tiffIFD,
+					tiffIFDOffset + 8,
+					this.bigEndian, tiffDataOffset + tiffHeader.length + totalTIFFIFDSize
+				)
 				tiffData.push(exifIFD)
 
 				tiffIFDOffset += 12
@@ -383,7 +404,12 @@ export class JPEGMetadata extends Metadata {
 					exifIFD.set(encoded.buffer, exifIFDOffset + 8)
 				} else {
 					// Allocate tiffData
-					writeUint32(exifIFD, exifIFDOffset + 8, this.bigEndian, tiffDataOffset + tiffHeader.length + totalTIFFIFDSize)
+					writeUint32(
+						exifIFD,
+						exifIFDOffset + 8,
+						this.bigEndian,
+						tiffDataOffset + tiffHeader.length + totalTIFFIFDSize
+					)
 					tiffData.push(encoded.buffer)
 					tiffDataOffset += encoded.buffer.length
 				}

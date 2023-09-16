@@ -3,6 +3,7 @@ import { readUint16, readUint32, writeUint16, writeUint32 } from "./binary_manip
 
 export const TIFF_LONG = 4
 
+/* eslint-disable no-unused-vars */
 /**
  * @typedef {{type: number, buffer: Uint8Array, count: number}} TagEncodeResult
  */

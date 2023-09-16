@@ -43,7 +43,11 @@ module.exports = {
 		"no-constant-condition": [
 			"error",
 			{"checkLoops": false},
-		]
+		],
+		"max-len": [
+			1,
+			{"code": 120}
+		],
 	},
 	"ignorePatterns": [
 		"rime-mod/fraction.mjs"
