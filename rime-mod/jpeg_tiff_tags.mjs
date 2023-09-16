@@ -37,7 +37,8 @@ function defineEnumHandler(extendsClass, values, defval = "Unknown") {
 		 * @param {number[]} data
 		 */
 		toReadable(data) {
-			return values[data[0]] ?? defval
+			const v = values[data[0]]
+			return v ? v : defval
 		}
 	}
 }
@@ -166,17 +167,18 @@ class FlashStatusHandler extends ShortTypeHandler {
 	}
 }
 
+const CODE_ASCII = [0x41, 0x53, 0x43, 0x49, 0x49, 0, 0, 0]
+const CODE_JIS = [0x4A, 0x49, 0x53, 0, 0, 0, 0, 0]
+const CODE_UNICODE = [0x55, 0x4E, 0x49, 0x43, 0x4F, 0x44, 0x45, 0]
+const CODE_UNDEFINED = [0, 0, 0, 0, 0, 0, 0, 0]
+
 class UserCommentHandler extends UndefinedTypeHandler {
-	static CODE_ASCII = [0x41, 0x53, 0x43, 0x49, 0x49, 0, 0, 0]
-	static CODE_JIS = [0x4A, 0x49, 0x53, 0, 0, 0, 0, 0]
-	static CODE_UNICODE = [0x55, 0x4E, 0x49, 0x43, 0x4F, 0x44, 0x45, 0]
-	static CODE_UNDEFINED = [0, 0, 0, 0, 0, 0, 0, 0]
 
 	/**
 	 * @param {Uint8Array} data
 	 */
 	toReadable(data) {
-		if (UserCommentHandler.isArrayEqual(data, UserCommentHandler.CODE_ASCII)) {
+		if (UserCommentHandler.isArrayEqual(data, CODE_ASCII)) {
 			// ASCII
 			const result = []
 
@@ -185,11 +187,11 @@ class UserCommentHandler extends UndefinedTypeHandler {
 			}
 
 			return result.join("")
-		} else if (UserCommentHandler.isArrayEqual(data, UserCommentHandler.CODE_UNDEFINED)) {
+		} else if (UserCommentHandler.isArrayEqual(data, CODE_UNDEFINED)) {
 			return super.toReadable(data.slice(8))
-		} else if (UserCommentHandler.isArrayEqual(data, UserCommentHandler.CODE_JIS)) {
+		} else if (UserCommentHandler.isArrayEqual(data, CODE_JIS)) {
 			return "TODO JIS " + super.toReadable(data.slice(8))
-		} else if (UserCommentHandler.isArrayEqual(data, UserCommentHandler.CODE_UNICODE)) {
+		} else if (UserCommentHandler.isArrayEqual(data, CODE_UNICODE)) {
 			return "TODO UNICODE " + super.toReadable(data.slice(8))
 		} else {
 			return "Unknown Data"

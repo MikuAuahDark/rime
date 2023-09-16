@@ -18,7 +18,7 @@ module.exports = {
 		}
 	],
 	"parserOptions": {
-		"ecmaVersion": "latest",
+		"ecmaVersion": "2017",
 		"sourceType": "module"
 	},
 	"rules": {
