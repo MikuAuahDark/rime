@@ -58,6 +58,23 @@ function defineUnitHandler(extendsClass, unit) {
 	}
 }
 
+/**
+ * @template {typeof RationalTypeHandler} T
+ * @param {T} extendsClass 
+ * @param {string} unit
+ */
+function defineRationalUnitHandler(extendsClass, unit) {
+	return class extends extendsClass {
+		/**
+		 * @param {Fraction[]} data
+		 */
+		toReadable(data) {
+			const v = data[0]
+			return v.d == 0xFFFFFFFF ? "Unknown" : `${v.n / v.d} ${unit}`
+		}
+	}
+}
+
 class CopyrightTypeHandler extends ASCIITypeHandler {
 	/**
 	 * @param {string} s
@@ -97,6 +114,130 @@ class SubjectDistanceTypeHandler extends RationalTypeHandler {
 			default:
 				return `${data[0].n / data[0].d} meter(s)`
 		}
+	}
+}
+
+class FlashStatusHandler extends ShortTypeHandler {
+	/**
+	 * @param {number[]} data
+	 */
+	toReadable(data) {
+		const flash = data[0]
+		const result = [
+			(flash & 1) ? "Flash Fired" : "Flash Not Fired",
+
+		]
+
+		switch ((flash >> 1) & 3) {
+			case 0:
+				result.push("No Strobe Return Detection")
+				break
+			case 1:
+			default:
+				result.push("Reserved Return Light")
+				break
+			case 2:
+				result.push("Strobe Return Light Not Detected")
+				break
+			case 3:
+				result.push("Strobe Return Light Detected")
+				break
+		}
+
+		switch ((flash >> 3) & 3) {
+			case 0:
+			default:
+				result.push("Unknown Camera Flash Mode")
+				break
+			case 1:
+				result.push("Compulsory Flash Firing")
+				break
+			case 2:
+				result.push("Compulsory Flash Suppression")
+				break
+			case 3:
+				result.push("Auto Camera Flash Mode")
+				break
+		}
+
+		result.push((flash & 32) ? "Has Flash Function" : "No Flash Function")
+		result.push((flash & 64) ? "Supports Red-Eye Reduction" : "No/Unknown Red-Eye Reduction")
+
+		return result.join(", ")
+	}
+}
+
+class UserCommentHandler extends UndefinedTypeHandler {
+	static CODE_ASCII = [0x41, 0x53, 0x43, 0x49, 0x49, 0, 0, 0]
+	static CODE_JIS = [0x4A, 0x49, 0x53, 0, 0, 0, 0, 0]
+	static CODE_UNICODE = [0x55, 0x4E, 0x49, 0x43, 0x4F, 0x44, 0x45, 0]
+	static CODE_UNDEFINED = [0, 0, 0, 0, 0, 0, 0, 0]
+
+	/**
+	 * @param {Uint8Array} data
+	 */
+	toReadable(data) {
+		if (UserCommentHandler.isArrayEqual(data, UserCommentHandler.CODE_ASCII)) {
+			// ASCII
+			const result = []
+
+			for (const n of data.slice(8)) {
+				result.push(String.fromCharCode(n))
+			}
+
+			return result.join("")
+		} else if (UserCommentHandler.isArrayEqual(data, UserCommentHandler.CODE_UNDEFINED)) {
+			return super.toReadable(data.slice(8))
+		} else if (UserCommentHandler.isArrayEqual(data, UserCommentHandler.CODE_JIS)) {
+			return "TODO JIS " + super.toReadable(data.slice(8))
+		} else if (UserCommentHandler.isArrayEqual(data, UserCommentHandler.CODE_UNICODE)) {
+			return "TODO UNICODE " + super.toReadable(data.slice(8))
+		} else {
+			return "Unknown Data"
+		}
+	}
+
+	/**
+	 * @param {Uint8Array} haystack
+	 * @param {number[]} needle
+	 * @param {number} start
+	 */
+	static isArrayEqual(haystack, needle, start = 0) {
+		if ((start + needle.length) >= haystack.length) {
+			return false
+		}
+
+		for (let i = 0; i < needle.length; i++) {
+			if (haystack[start + i] != needle[i]) {
+				return false
+			}
+		}
+
+		return true
+	}
+}
+
+class LensSpecHandler extends RationalTypeHandler {
+	/**
+	 * @param {Fraction[]} d
+	 */
+	toReadable(d) {
+		if (d.length < 4) {
+			return "Unknown"
+		}
+
+		const minfl = LensSpecHandler.stringify(d[0])
+		const maxfl = LensSpecHandler.stringify(d[1])
+		const minfn = LensSpecHandler.stringify(d[2])
+		const maxfn = LensSpecHandler.stringify(d[3])
+		return `Focal Length ${minfl} - ${maxfl} mm, f/${minfn} - f/${maxfn}`
+	}
+
+	/**
+	 * @param {Fraction} d
+	 */
+	static stringify(d) {
+		return d.d == 0 ? "Unknown" : (d.n / d.d).toString()
 	}
 }
 
@@ -215,3 +356,55 @@ defineTag(0x9208, "Light Source", 1, defineEnumHandler(ShortTypeHandler, {
 	24: "ISO Studio Tungsten",
 	255: "Other"
 }, "Reserved"), "Kind of light source used to take the picture.")
+defineTag(0x9209, "Flash Status", 1, FlashStatusHandler,
+	"This tag indicates the status of flash when the image was shot."
+)
+defineTag(0x920A, "Focal Length", 1, defineUnitHandler(RationalTypeHandler, "mm"),
+	"The actual focal length of the lens, in mm. Conversion is not made to the focal length of a 35 mm film camera."
+)
+defineTag(0x927C, "Maker Note", 1, UndefinedTypeHandler,
+	"A tag for manufacturers of Exif/DCF writers to record any desired information. " +
+	"The contents are up to the manufacturer."
+)
+defineTag(0x9286, "User Comment", 1, UserCommentHandler,
+	"A tag for Exif users to write keywords or comments on the image besides those in \"Image Description\", and " +
+	"without the character code limitations of the \"Image Description\" tag."
+)
+defineTag(0x9290, "Subsecond Time", 2, ASCIITypeHandler,
+	"A tag used to record fractions of seconds for the \"Date & Time\" tag"
+)
+defineTag(0x9291, "Original Subsecond Time", 2, ASCIITypeHandler,
+	"A tag used to record fractions of seconds for the \"Original Date & Time\" tag."
+)
+defineTag(0x9292, "Digitized Subsecond Time", 2, ASCIITypeHandler,
+	"A tag used to record fractions of seconds for the \"Digitized Date & Time\" tag."
+)
+// TODO defineTag(0x9400, "Temperature")
+defineTag(0x9401, "Humidity", 1, defineRationalUnitHandler(RationalTypeHandler, "%"),
+	"Humidity as the ambient situation at the shot, for example the room humidity where the photographer was " +
+	"holding the camera"
+)
+defineTag(0x9402, "Pressure", 1, defineRationalUnitHandler(RationalTypeHandler, "hPa"),
+	"Pressure as the ambient situation at the shot, for example the room atmospfere where the photographer was " +
+	"holding the camera or the water pressure under the sea."
+)
+// TODO defineTag(0x9403, "Water Depth")
+defineTag(0x9494, "Acceleration", 1, defineRationalUnitHandler(RationalTypeHandler, "mGal"),
+	"Acceleration (a scalar regardless of direction) as the ambient situation at the shot, for example the driving " +
+	"acceleration of the vehicle which the photographer rode on at the shot."
+)
+// TODO defineTag(0x9405, "Camera Elevation Angle")
+defineTag(0xA430, "Camera Owner", 2, ASCIITypeHandler, "This tag records the owner of a camera used in photography.")
+defineTag(0xA431, "Camera Body S/N", 2, ASCIITypeHandler,
+	"This tag records the serial number of the body of the camera that was used in photography."
+)
+defineTag(0xA432, "Lens Specification", 1, LensSpecHandler,
+	"This tag notes minimum focal length, maximum focal length, minimum F number in the minimum focal length, and " +
+	"minimum F number in the maximum focal length, which are specification information for the lens that was used " +
+	"in photography."
+)
+defineTag(0xA433, "Lens Manufacturer", 1, ASCIITypeHandler, "This tag records the lens manufacturer.")
+defineTag(0xA434, "Lens Model", 1, ASCIITypeHandler, "This tag records the lens's model name and model number.")
+defineTag(0xA435, "Lens S/N", 2, ASCIITypeHandler,
+	"This tag records the serial number of the interchangeable lens that was used in photography."
+)
