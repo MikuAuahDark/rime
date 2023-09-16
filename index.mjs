@@ -223,7 +223,7 @@ class LayoutManager {
 		if (message instanceof Error) {
 			msg = message.message
 		} else {
-			msg = toString(message)
+			msg = message.toString()
 		}
 
 		this.errorAlert.labelText = msg
@@ -469,8 +469,12 @@ class LayoutManager {
 				this.outputImage.src = url
 				this.outputImageFilename = removed.name
 				this.imageResultSection.style.removeProperty("display")
+
+				return
 			}
 		}
+
+		this.showError("No metadata removed.")
 	}
 
 	downloadOutputImage() {
