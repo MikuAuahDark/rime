@@ -124,44 +124,43 @@ class FlashStatusHandler extends ShortTypeHandler {
 	toReadable(data) {
 		const flash = data[0]
 		const result = [
-			(flash & 1) ? "Flash Fired" : "Flash Not Fired",
-
+			(flash & 1) ? "Fired" : "Not Fired",
 		]
 
 		switch ((flash >> 1) & 3) {
 			case 0:
-				result.push("No Strobe Return Detection")
+				result.push("No Return Detection")
 				break
 			case 1:
 			default:
 				result.push("Reserved Return Light")
 				break
 			case 2:
-				result.push("Strobe Return Light Not Detected")
+				result.push("No Strobe Return Light")
 				break
 			case 3:
-				result.push("Strobe Return Light Detected")
+				result.push("Strobe Return Light")
 				break
 		}
 
 		switch ((flash >> 3) & 3) {
 			case 0:
 			default:
-				result.push("Unknown Camera Flash Mode")
+				result.push("Unknown Flash Mode")
 				break
 			case 1:
-				result.push("Compulsory Flash Firing")
+				result.push("Compulsory Firing")
 				break
 			case 2:
-				result.push("Compulsory Flash Suppression")
+				result.push("Compulsory Suppression")
 				break
 			case 3:
-				result.push("Auto Camera Flash Mode")
+				result.push("Auto Mode")
 				break
 		}
 
-		result.push((flash & 32) ? "Has Flash Function" : "No Flash Function")
-		result.push((flash & 64) ? "Supports Red-Eye Reduction" : "No/Unknown Red-Eye Reduction")
+		result.push((flash & 32) ? "Has Flash" : "No Flash")
+		result.push((flash & 64) ? "Red-Eye Reduction" : "No Red-Eye Reduction")
 
 		return result.join(", ")
 	}
@@ -241,6 +240,51 @@ class LensSpecHandler extends RationalTypeHandler {
 	}
 }
 
+class GPSLatRefHandler extends ASCIITypeHandler {
+	/**
+	 * @param {string} d
+	 */
+	toReadable(data) {
+		switch (data) {
+			case "N":
+				return "North"
+			case "S":
+				return "South"
+			default:
+				return "Reserved"
+		}
+	}
+}
+
+class GPSLonRefHandler extends ASCIITypeHandler {
+	/**
+	 * @param {string} d
+	 */
+	toReadable(data) {
+		switch (data) {
+			case "E":
+				return "East"
+			case "W":
+				return "West"
+			default:
+				return "Reserved"
+		}
+	}
+}
+
+class GPSPositionHandler extends RationalTypeHandler {
+	/**
+	 * @param {Fraction[]} d
+	 */
+	toReadable(d) {
+		if (d.length < 3) {
+			return "Unknown"
+		}
+
+		return `${d[0].n / d[0].d}°${d[1].n / d[1].d}'${d[2].n / d[2].d}"`
+	}
+}
+
 defineTag(256, "Image Width", 0, defineUnitHandler(ShortOrLongTypeHandler, "pixels"), "Image width, in pixels.")
 defineTag(257, "Image Height", 0, defineUnitHandler(ShortOrLongTypeHandler, "pixels"), "Image height, in pixels.")
 defineTag(271, "Manufacturer", 2, ASCIITypeHandler, "Scanner manufacturer.")
@@ -270,6 +314,9 @@ defineTag(305, "Software", 2, ASCIITypeHandler,
 	"Name and version number of the software package(s) used to create or modify the image."
 )
 defineTag(306, "Date & Time", 2, ASCIITypeHandler, "Date and time of image creation or modification.")
+defineTag(315, "Artist", 1, ASCIITypeHandler,
+	"This tag records the name of the camera owner, photographer or image creator."
+)
 defineTag(0x8298, "Copyright", 1, CopyrightTypeHandler, "Copyright information of the image.")
 defineTag(0x8769, "ExifIFD", 0, LongTypeHandler)
 defineTag(0x8825, "GPSIFD", 0, LongTypeHandler)
@@ -389,11 +436,35 @@ defineTag(0x9402, "Pressure", 1, defineRationalUnitHandler(RationalTypeHandler, 
 	"holding the camera or the water pressure under the sea."
 )
 // TODO defineTag(0x9403, "Water Depth")
-defineTag(0x9494, "Acceleration", 1, defineRationalUnitHandler(RationalTypeHandler, "mGal"),
+defineTag(0x9404, "Acceleration", 1, defineRationalUnitHandler(RationalTypeHandler, "mGal"),
 	"Acceleration (a scalar regardless of direction) as the ambient situation at the shot, for example the driving " +
 	"acceleration of the vehicle which the photographer rode on at the shot."
 )
 // TODO defineTag(0x9405, "Camera Elevation Angle")
+defineTag(0xA20B, "Flash Energy", 1, defineUnitHandler(RationalTypeHandler, "BPCS"),
+	"Indicates the strobe energy at the time the image is captured."
+)
+defineTag(0xA215, "Exposure Index", 1, RationalTypeHandler,
+	"Indicates the exposure index selected on the camera or input device at the time the image is captured."
+)
+defineTag(0xA217, "Sensing Method", 1, defineEnumHandler(ShortTypeHandler, {
+	1: "Not Defined",
+	2: "One-Chip Color Area Sensor",
+	3: "Two-Chip Color Area Sensor",
+	4: "Three-Chip Color Area Sensor",
+	5: "Color Sequential Area Sensor",
+	6: "Trilinear Area Sensor",
+	7: "Color Sequential Linear Sensor",
+}, "Reserved"), "Indicates the image sensor type on the camera or input device.")
+defineTag(0xA300, "File Source", 1, defineEnumHandler(UndefinedTypeHandler, {
+	0: "Other",
+	1: "Scanner (Transparent Type)",
+	2: "Scanner (Reflex Type)",
+	3: "DSC",
+}, "Reserved"), "Indicates the image source.")
+defineTag(0xA301, "Scene Type", 1, defineEnumHandler(UndefinedTypeHandler, {
+	1: "Direct Photograph"
+}, "Reserved"), "Indicates the type of scene.")
 defineTag(0xA430, "Camera Owner", 2, ASCIITypeHandler, "This tag records the owner of a camera used in photography.")
 defineTag(0xA431, "Camera Body S/N", 2, ASCIITypeHandler,
 	"This tag records the serial number of the body of the camera that was used in photography."
@@ -407,4 +478,21 @@ defineTag(0xA433, "Lens Manufacturer", 1, ASCIITypeHandler, "This tag records th
 defineTag(0xA434, "Lens Model", 1, ASCIITypeHandler, "This tag records the lens's model name and model number.")
 defineTag(0xA435, "Lens S/N", 2, ASCIITypeHandler,
 	"This tag records the serial number of the interchangeable lens that was used in photography."
+)
+
+defineTag(1, "Latitude Ref", 2, GPSLatRefHandler,
+	"Indicates whether the latitude is north or south latitude.",
+	GPS_TAGS
+)
+defineTag(2, "Latitude", 2, GPSPositionHandler,
+	"Indicates the latitude in Degrees, minutes, and seconds (DMS)",
+	GPS_TAGS
+)
+defineTag(3, "Longitude Ref", 2, GPSLonRefHandler,
+	"Indicates whether the longitude is east or west longitude.",
+	GPS_TAGS
+)
+defineTag(4, "Longitude", 2, GPSPositionHandler,
+	"Indicates the longitude in Degrees, minutes, and seconds (DMS)",
+	GPS_TAGS
 )
