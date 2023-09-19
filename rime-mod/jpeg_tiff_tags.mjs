@@ -35,10 +35,10 @@ function defineTag(id, name, level, handler, description = "", dest = TIFF_TAGS)
 function defineEnumHandler(extendsClass, values, defval = "Unknown") {
 	return class extends extendsClass {
 		/**
-		 * @param {number[]} data
+		 * @param {number[]|string} data
 		 */
 		toReadable(data) {
-			const v = values[data[0]]
+			const v = typeof data == "string" ? values[data] : values[data[0]]
 			return v ? v : defval
 		}
 	}
@@ -517,6 +517,9 @@ defineTag(0xA300, "File Source", 1, defineEnumHandler(UndefinedTypeHandler, {
 defineTag(0xA301, "Scene Type", 1, defineEnumHandler(UndefinedTypeHandler, {
 	1: "Direct Photograph"
 }, "Reserved"), "Indicates the type of scene.")
+defineTag(0xA420, "Unique Image ID", 2, ASCIITypeHandler,
+	"This tag indicates an identifier assigned uniquely to each image."
+)
 defineTag(0xA430, "Camera Owner", 2, ASCIITypeHandler, "This tag records the owner of a camera used in photography.")
 defineTag(0xA431, "Camera Body S/N", 2, ASCIITypeHandler,
 	"This tag records the serial number of the body of the camera that was used in photography."
@@ -536,7 +539,7 @@ defineTag(0xA435, "Lens S/N", 2, ASCIITypeHandler,
  ****** EXIF GPS Metadata ******
  *******************************/
 
-defineTag(1, "Latitude Ref", 2, GPSLatRefHandler,
+defineTag(1, "Latitude Ref.", 2, GPSLatRefHandler,
 	"Indicates whether the latitude is north or south latitude.",
 	GPS_TAGS
 )
@@ -544,7 +547,7 @@ defineTag(2, "Latitude", 2, GPSPositionHandler,
 	"Indicates the latitude in Degrees, minutes, and seconds (DMS)",
 	GPS_TAGS
 )
-defineTag(3, "Longitude Ref", 2, GPSLonRefHandler,
+defineTag(3, "Longitude Ref.", 2, GPSLonRefHandler,
 	"Indicates whether the longitude is east or west longitude.",
 	GPS_TAGS
 )
@@ -590,5 +593,78 @@ defineTag(12, "Speed Unit", 1, defineEnumHandler(ASCIITypeHandler, {
 }, "Reserved"), "Indicates the unit used to express the GPS receiver speed of movement.", GPS_TAGS)
 defineTag(13, "Speed", 1, RationalToFloatHandler,
 	"Indicates the speed of GPS receiver movement.",
+	GPS_TAGS
+)
+defineTag(14, "Direction Ref.", 1, defineEnumHandler(ASCIITypeHandler, {
+	"T": "True Direction",
+	"M": "Magnetic Direction"
+}, "Reserved"), "Indicates the reference for giving the direction of GPS receiver movement.", GPS_TAGS)
+defineTag(15, "Direction", 1, defineUnitHandler(RationalToFloatHandler, "degrees"),
+	"Indicates the direction of GPS receiver movement.",
+	GPS_TAGS
+)
+defineTag(16, "Image Direction Ref.", 1, defineEnumHandler(ASCIITypeHandler, {
+	"T": "True Direction",
+	"M": "Magnetic Direction"
+}, "Reserved"), "Indicates the reference for giving the direction of the image when it's captured.", GPS_TAGS)
+defineTag(17, "Image Direction", 1, defineUnitHandler(RationalToFloatHandler, "degrees"),
+	"Indicates the direction of the image when it was captured.",
+	GPS_TAGS
+)
+defineTag(18, "Map Datum", 2, ASCIITypeHandler,
+	"Indicates the geodetic survey data used by the GPS receiver.",
+	GPS_TAGS
+)
+defineTag(19, "Dest. Latitude Ref.", 2, GPSLatRefHandler,
+	"Indicates whether the latitude of the destination point is north or south latitude.",
+	GPS_TAGS
+)
+defineTag(20, "Dest. Latitude", 2, GPSPositionHandler,
+	"Indicates the latitude of the destination point in Degrees, minutes, and seconds (DMS)",
+	GPS_TAGS
+)
+defineTag(21, "Dest. Longitude Ref.", 2, GPSLonRefHandler,
+	"Indicates whether the longitude of the destination point is east or west longitude.",
+	GPS_TAGS
+)
+defineTag(22, "Dest. Longitude", 2, GPSPositionHandler,
+	"Indicates the longitude of the destination point in Degrees, minutes, and seconds (DMS)",
+	GPS_TAGS
+)
+defineTag(23, "Dest. Bearing Ref.", 1, defineEnumHandler(ASCIITypeHandler, {
+	"T": "True Direction",
+	"M": "Magnetic Direction"
+}, "Reserved"), "Indicates the reference used for giving the bearing to the destination point.", GPS_TAGS)
+defineTag(24, "Dest. Bearing", 1, defineUnitHandler(RationalToFloatHandler, "degrees"),
+	"Indicates the bearing to the destination point.",
+	GPS_TAGS
+)
+defineTag(25, "Dest. Distance Unit", 1, defineEnumHandler(ASCIITypeHandler, {
+	"K": "Kilometers",
+	"M": "Miles",
+	"N": "Nautical Miles"
+}, "Reserved"), "Indicates the unit used to express the distance to the destination point.", GPS_TAGS)
+defineTag(26, "Dest. Distance", 1, RationalToFloatHandler,
+	"Indicates the speed of GPS receiver movement.",
+	GPS_TAGS
+)
+defineTag(27, "GPS Processing Method", 2, UserCommentHandler, // For now
+	"A character string recording the name of the method used for location finding.",
+	GPS_TAGS
+)
+defineTag(28, "GPS Area Info", 2, UserCommentHandler, // For now
+	"A character string recording the name of the GPS area.",
+	GPS_TAGS
+)
+defineTag(29, "GPS Date Stamp", 2, ASCIITypeHandler,
+	"A character string recording date and time information relative to UTC (Coordinated Universal Time).",
+	GPS_TAGS
+)
+defineTag(30, "GPS Differential", 1, defineEnumHandler(ShortTypeHandler, {
+	0: "No Differential Correction",
+	1: "Differential Correction Applied"
+}, "Reserved"), "Indicates whether differential correction is applied to the GPS receiver.", GPS_TAGS)
+defineTag(31, "Horizontal Error", 1, defineUnitHandler(RationalToFloatHandler, "meters"),
+	"This tag indicates horizontal positioning errors in meters.",
 	GPS_TAGS
 )
