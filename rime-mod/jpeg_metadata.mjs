@@ -298,8 +298,11 @@ export class JPEGMetadata extends Metadata {
 		let gpsIFD = null
 		let totalGPSIFD = 0
 		if (this.hasGPS) {
-			totalGPSIFD = countWrittenIFDs(metadatas, this.parsedGPSData, this.rawGPSData)
-			gpsIFD = new Uint8Array(totalGPSIFD * 12 + 6)
+			totalGPSIFD = countWrittenIFDs(metadatas, this.parsedGPSData, this.rawGPSData) - ("0" in this.rawGPSData)
+
+			if (totalGPSIFD > 0) {
+				gpsIFD = new Uint8Array(totalGPSIFD * 12 + 6)
+			}
 		}
 
 		// Calculate TIFF IFD sizes
