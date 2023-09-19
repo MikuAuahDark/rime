@@ -1,3 +1,4 @@
+import { Fraction } from "./fraction.mjs"
 import { TagTypeHandler, ByteTypeHandler, ASCIITypeHandler, ShortTypeHandler, LongTypeHandler, RationalTypeHandler, UndefinedTypeHandler, ShortOrLongTypeHandler } from "./jpeg_tiff_tag_type.mjs"
 
 /** @type {Map<number, {name: string, handler: TagTypeHandler, level: number, info: string}>} */
@@ -28,7 +29,7 @@ function defineTag(id, name, level, handler, description = "", dest = TIFF_TAGS)
 /**
  * @template {typeof ShortTypeHandler|typeof LongTypeHandler} T
  * @param {T} extendsClass 
- * @param {{[key: number]: string}} values 
+ * @param {{[key: number|string]: string}} values 
  * @param {string} defval
  */
 function defineEnumHandler(extendsClass, values, defval = "Unknown") {
@@ -287,6 +288,50 @@ class GPSPositionHandler extends RationalTypeHandler {
 	}
 }
 
+class GPSAltitudeRefHandler extends ByteTypeHandler {
+	/**
+	 * @param {number[]} data
+	 */
+	toReadable(data) {
+		if (data[0] == 0) {
+			return "At/Above Sea Level"
+		} else {
+			return "Below Sea Level"
+		}
+	}
+}
+
+class GPSTimestampHandler extends RationalTypeHandler {
+	/**
+	 * @param {Fraction[]} d
+	 */
+	toReadable(d) {
+		if (d.length < 3) {
+			return "Unknown"
+		}
+
+		const hour = d[0].n / d[0].d
+		const minute = d[1].n / d[1].d
+		const second = d[2].n / d[2].d
+		const ts = second + minute * 60 + hour * 3600
+
+		return `${Math.floor(ts / 3600)}:${Math.floor(ts / 60 % 60)}:${ts % 60}`
+	}
+}
+
+class RationalToFloatHandler extends RationalTypeHandler {
+	/**
+	 * @param {Fraction[]} d
+	 */
+	toReadable(d) {
+		return (d[0].n / d[0].d).toString()
+	}
+}
+
+/***************************
+ ****** TIFF Metadata ******
+ ***************************/
+
 defineTag(256, "Image Width", 0, defineUnitHandler(ShortOrLongTypeHandler, "pixels"), "Image width, in pixels.")
 defineTag(257, "Image Height", 0, defineUnitHandler(ShortOrLongTypeHandler, "pixels"), "Image height, in pixels.")
 defineTag(271, "Manufacturer", 2, ASCIITypeHandler, "Scanner manufacturer.")
@@ -319,6 +364,11 @@ defineTag(306, "Date & Time", 2, ASCIITypeHandler, "Date and time of image creat
 defineTag(315, "Artist", 1, ASCIITypeHandler,
 	"This tag records the name of the camera owner, photographer or image creator."
 )
+
+/***************************
+ ****** EXIF Metadata ******
+ ***************************/
+
 defineTag(0x8298, "Copyright", 1, CopyrightTypeHandler, "Copyright information of the image.")
 defineTag(0x8769, "ExifIFD", 0, LongTypeHandler)
 defineTag(0x8825, "GPSIFD", 0, LongTypeHandler)
@@ -482,6 +532,10 @@ defineTag(0xA435, "Lens S/N", 2, ASCIITypeHandler,
 	"This tag records the serial number of the interchangeable lens that was used in photography."
 )
 
+/*******************************
+ ****** EXIF GPS Metadata ******
+ *******************************/
+
 defineTag(1, "Latitude Ref", 2, GPSLatRefHandler,
 	"Indicates whether the latitude is north or south latitude.",
 	GPS_TAGS
@@ -496,5 +550,45 @@ defineTag(3, "Longitude Ref", 2, GPSLonRefHandler,
 )
 defineTag(4, "Longitude", 2, GPSPositionHandler,
 	"Indicates the longitude in Degrees, minutes, and seconds (DMS)",
+	GPS_TAGS
+)
+defineTag(5, "Altitude Reference", 2, GPSAltitudeRefHandler,
+	"Indicates the altitude used as the reference altitude. If the altitude is below sea level, the altitude is " +
+	"indicated as a negative absolute value in the \"Altitude\" tag.",
+	GPS_TAGS
+)
+defineTag(6, "Altitude", 2, defineUnitHandler(RationalToFloatHandler, "meters"),
+	"Indicates the altitude based on the reference in \"Altitude Reference\".",
+	GPS_TAGS
+)
+defineTag(7, "GPS Timestamp", 2, GPSTimestampHandler,
+	"Indicates the GPS time as UTC (Coordinated Universal Time) in 24-hour format.",
+	GPS_TAGS
+)
+defineTag(8, "GPS Satellites", 2, ASCIITypeHandler,
+	"Indicates the GPS satellites used for measurements. This tag may be used to describe the number of " +
+	"satellites, their ID number, angle of elevation, azimuth, SNR and other information.",
+	GPS_TAGS
+)
+defineTag(9, "GPS Status", 1, defineEnumHandler(ASCIITypeHandler, {
+	"A": "Measurement In Progress",
+	"V": "Measurement Interrupted"
+}, "Reserved"), "Indicates the status of the GPS receiver when the image is recorded.", GPS_TAGS)
+defineTag(10, "GPS Measurement Mode", 1, defineEnumHandler(ASCIITypeHandler, {
+	"2": "2-Dimensional Measurement",
+	"3": "3-Dimensional Measurement"
+}, "Reserved"), "Indicates the GPS measurement mode.", GPS_TAGS)
+defineTag(11, "GPS DOP", 2, RationalToFloatHandler,
+	"Indicates the GPS DOP (dilution of precision). An Horizontal DOP value is written during two-dimensional " +
+	"measurement, and Positional DOP during three-dimensional measurement.",
+	GPS_TAGS
+)
+defineTag(12, "Speed Unit", 1, defineEnumHandler(ASCIITypeHandler, {
+	"K": "Km/h",
+	"M": "Mph",
+	"N": "Knots"
+}, "Reserved"), "Indicates the unit used to express the GPS receiver speed of movement.", GPS_TAGS)
+defineTag(13, "Speed", 1, RationalToFloatHandler,
+	"Indicates the speed of GPS receiver movement.",
 	GPS_TAGS
 )
