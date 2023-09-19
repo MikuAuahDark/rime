@@ -109,7 +109,7 @@
 		<main class="mdc-top-app-bar--fixed-adjust">
 			<section class="rime_container">
 				<h2 class="mdc-typography--headline4">Input Image</h2>
-				<p>Click or drag new image to change.</p>
+				<p>Click or drag image to open image.</p>
 				<div id="input_area" class="mdc-ripple-surface mdc-elevation--z1">
 					<div class="input_area_container" style="z-index: 0">
 						<!-- Non-dragged: filter: opacity(100%) blur(0px); -->
@@ -210,6 +210,7 @@
 			<!-- Else: display: block; -->
 			<section id="image_result" class="rime_container" style="display: none">
 				<h2 class="mdc-typography--headline4">Output Image</h2>
+				<p id="dirty">The output image below does not reflect the selected metadata to be removed. Click the button above to refresh.</p>
 				<div id="rime_image_container">
 					<img id="output_image" class="mdc-elevation--z4" src="">
 				</div>

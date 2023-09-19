@@ -37,6 +37,7 @@ class LayoutManager {
 		this.metadataDeleter = null
 		/** @type {{[key: string]: HTMLInputElement}} */
 		this.metadataListCheckbox = {}
+		this.dirty = true
 
 		/** @type {HTMLButtonElement} */
 		this.rimeAboutButton = document.getElementById("rime_about_button")
@@ -60,6 +61,8 @@ class LayoutManager {
 		this.removeMetadataButton = document.getElementById("remove_metadata")
 		/** @type {HTMLElement} */
 		this.imageResultSection = document.getElementById("image_result")
+		/** @type {HTMLParagraphElement} */
+		this.dirtyWarning = document.getElementById("dirty")
 		/** @type {HTMLImageElement} */
 		this.outputImage = document.getElementById("output_image")
 		/** @type {HTMLButtonElement} */
@@ -74,7 +77,9 @@ class LayoutManager {
 		this.errorAlert = new mdc.snackbar.MDCSnackbar(document.getElementById("error_alert"))
 		this.metadataListTableMDC = new mdc.dataTable.MDCDataTable(this.metadataListTable)
 		this.rimeAboutDialog = new mdc.dialog.MDCDialog(document.getElementById("rime_about"))
-		this.rimeMetadataDescriptionDialog = new mdc.dialog.MDCDialog(document.getElementById("rime_metadata_description"))
+		this.rimeMetadataDescriptionDialog = new mdc.dialog.MDCDialog(
+			document.getElementById("rime_metadata_description")
+		)
 
 		// Initialize events
 		this.inputArea.addEventListener("click", this.inputAreaClick.bind(this))
@@ -256,6 +261,7 @@ class LayoutManager {
 	setTableData(metadata) {
 		/** @type {HTMLTableRowElement[]} */
 		const rows = []
+		const dirtyFlag = this.markDirty.bind(this)
 		this.metadataListCheckbox = {}
 
 		for (const md of metadata) {
@@ -288,6 +294,7 @@ class LayoutManager {
 			checkbox.disabled = disabled
 			checkbox.classList.add("mdc-checkbox__native-control")
 			checkbox.setAttribute("aria-labelledby", metadataId)
+			checkbox.addEventListener("change", dirtyFlag)
 
 			const div2 = document.createElement("div")
 			div2.classList.add("mdc-checkbox__background")
@@ -322,7 +329,7 @@ class LayoutManager {
 
 			const button = document.createElement("button")
 			button.classList.add("mdc-icon-button", "material-icons")
-			
+
 			const div5 = document.createElement("div")
 			div5.classList.add("mdc-icon-button__ripple")
 
@@ -460,15 +467,16 @@ class LayoutManager {
 
 				const blob = new Blob([removed.buffer], { type: removed.mime })
 				const url = URL.createObjectURL(blob)
-		
+
 				if (this.outputObjectURL) {
 					URL.revokeObjectURL(this.outputObjectURL)
 				}
-		
+
 				this.outputObjectURL = url
 				this.outputImage.src = url
 				this.outputImageFilename = removed.name
 				this.imageResultSection.style.removeProperty("display")
+				this.setDirty(false)
 
 				return
 			}
@@ -481,6 +489,23 @@ class LayoutManager {
 		if (this.outputObjectURL && this.outputImageFilename) {
 			this.performClickWithUrl(this.outputObjectURL, this.outputImageFilename)
 		}
+	}
+
+	/**
+	 * @param {boolean} dirty
+	 */
+	setDirty(dirty) {
+		if (dirty && !this.dirty) {
+			this.dirtyWarning.style.setProperty("display", "block")
+		} else if (!dirty && this.dirty) {
+			this.dirtyWarning.style.setProperty("display", "none")
+		}
+
+		this.dirty = dirty
+	}
+
+	markDirty() {
+		this.setDirty(true)
 	}
 }
 

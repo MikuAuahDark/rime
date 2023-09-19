@@ -14,6 +14,10 @@ function isInvalidMarker(data, offset) {
 	return data[offset] == 0xFF && MARKER_INVALID.has(data[offset + 1])
 }
 
+/**
+ * @param {Uint8Array} data 
+ * @param {number} offset 
+ */
 function isEXIFMarker(data, offset) {
 	return data[offset] == 0xFF && data[offset + 1] == 0xE1
 }
