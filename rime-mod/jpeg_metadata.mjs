@@ -1,5 +1,5 @@
 import { Metadata, MetadataResult } from "./metadata.mjs"
-import { TIFF_TAGS } from "./jpeg_tiff_tags.mjs"
+import { GPS_TAGS, TIFF_TAGS } from "./jpeg_tiff_tags.mjs"
 import { RawIFDData, getElementSize, ParsedIFDData, TIFF_LONG } from "./jpeg_tiff_tag_type.mjs"
 import { readUint16, readUint32, writeUint16, writeUint32 } from "./binary_manipulation.mjs"
 import { EXIF_IDENTIFIER, EXIF_IFD_ID, GPS_IFD_ID, INTEROP_IFD_ID, MARKER_INVALID } from "./jpeg_const.mjs"
@@ -216,6 +216,11 @@ export class JPEGMetadata extends Metadata {
 		this.parsedExifData = {}
 		/** @type {{[key: number]: RawIFDData}} */
 		this.rawExifData = {}
+		/** @type {{[key: number]: ParsedIFDData}} */
+		this.parsedGPSData = {}
+		/** @type {{[key: number]: RawIFDData}} */
+		this.rawGPSData = {}
+		this.hasGPS = false
 
 		// Parse TIFF
 		this.bigEndian = parseTIFF(exifData, 6, this.parsedTiffData, this.rawTiffData)
@@ -242,8 +247,18 @@ export class JPEGMetadata extends Metadata {
 			throw new Error("No EXIF data present.")
 		}
 
-		// TODO: GPS IFD
 		if (GPS_IFD_ID in this.parsedTiffData[0]) {
+			const gpsIFDOffset = this.parsedTiffData[0][GPS_IFD_ID].parsedData[0]
+			this.hasGPS = true
+			parseIFD(
+				exifData,
+				EXIF_IDENTIFIER.length,
+				gpsIFDOffset,
+				this.bigEndian,
+				this.parsedGPSData,
+				this.rawGPSData,
+				GPS_TAGS
+			)
 			delete this.parsedTiffData[0][GPS_IFD_ID]
 		}
 
@@ -266,6 +281,11 @@ export class JPEGMetadata extends Metadata {
 			result.push(new MetadataResult(key, value.name, value.toString(), value.description, value.level))
 		}
 
+		// GPS EXIF metadata
+		for (const [key, value] of Object.entries(this.parsedGPSData)) {
+			result.push(new MetadataResult(key, value.name, value.toString(), value.description, value.level))
+		}
+
 		return result
 	}
 
@@ -273,13 +293,22 @@ export class JPEGMetadata extends Metadata {
 	 * @param {Set<string>} metadatas
 	 */
 	removeMetadata(metadatas) {
+		// GPS EXIF IFD
+		/** @type {Uint8Array|null} */
+		let gpsIFD = null
+		let totalGPSIFD = 0
+		if (this.hasGPS) {
+			totalGPSIFD = countWrittenIFDs(metadatas, this.parsedGPSData, this.rawGPSData)
+			gpsIFD = new Uint8Array(totalGPSIFD * 12 + 6)
+		}
+
 		// Calculate TIFF IFD sizes
 		let totalAllIFD = 0
 		/** @type {number[]} */
 		let totalIFD = []
 		for (let i = 0; i < this.rawTiffData.length; i++) {
-			// +1 for EXIF IFD
-			let totalIFDCurrent = Number(i == 0) + countWrittenIFDs(
+			// i == 0 for EXIF IFD
+			let totalIFDCurrent = (i == 0) * (1 + (this.hasGPS && totalGPSIFD > 0)) + countWrittenIFDs(
 				metadatas,
 				this.parsedTiffData[i],
 				this.rawTiffData[i]
@@ -289,11 +318,8 @@ export class JPEGMetadata extends Metadata {
 			totalIFD.push(totalIFDCurrent)
 		}
 
-		// Count EXIF
-		const totalExifIFD = countWrittenIFDs(metadatas, this.parsedExifData, this.rawExifData)
-		const totalTIFFIFDSize = totalAllIFD * 12 + (this.rawTiffData.length + 1) * 6
-
 		// TIFF header and IFD
+		const totalTIFFIFDSize = totalAllIFD * 12 + (this.rawTiffData.length + 1) * 6
 		const tiffIFD = new Uint8Array(8 + totalTIFFIFDSize)
 		writeUint16(tiffIFD, 0, false, this.bigEndian ? 0x4D4D : 0x4949)
 		writeUint16(tiffIFD, 2, this.bigEndian, 42)
@@ -303,6 +329,9 @@ export class JPEGMetadata extends Metadata {
 		/** @type Uint8Array[] */
 		const tiffData = []
 		let tiffDataOffset = 0
+
+		// EXIF IFD
+		const totalExifIFD = countWrittenIFDs(metadatas, this.parsedExifData, this.rawExifData)
 		const exifIFD = new Uint8Array(totalExifIFD * 12 + 6)
 
 		/**
@@ -386,6 +415,23 @@ export class JPEGMetadata extends Metadata {
 
 				tiffIFDOffset += 12
 				currentWrittenIFD++
+
+				// Write EXIF GPS
+				if (gpsIFD) {
+					writeUint16(tiffIFD, tiffIFDOffset, this.bigEndian, GPS_IFD_ID)
+					writeUint16(tiffIFD, tiffIFDOffset + 2, this.bigEndian, TIFF_LONG)
+					writeUint32(tiffIFD, tiffIFDOffset + 4, this.bigEndian, 1)
+	
+					writeUint32(
+						tiffIFD,
+						tiffIFDOffset + 8,
+						this.bigEndian,
+						allocateIFDData(gpsIFD)
+					)
+	
+					tiffIFDOffset += 12
+					currentWrittenIFD++
+				}
 			}
 
 			console.assert(currentWrittenIFD == totalIFD[i], new Error(`current written IFD not equal with IFD ${i}`))
@@ -462,6 +508,9 @@ export class JPEGMetadata extends Metadata {
 
 		// EXIF IFD
 		genIFD(exifIFD, this.bigEndian, totalExifIFD, this.parsedExifData, this.rawExifData)
+		if (gpsIFD) {
+			genIFD(gpsIFD, this.bigEndian, totalGPSIFD, this.parsedGPSData, this.rawGPSData)
+		}
 
 		const app1MarkerData = consolidateUint8Array([
 			EXIF_HEADER,
