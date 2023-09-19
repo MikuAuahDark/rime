@@ -243,38 +243,6 @@ class LensSpecHandler extends RationalTypeHandler {
 	}
 }
 
-class GPSLatRefHandler extends ASCIITypeHandler {
-	/**
-	 * @param {string} d
-	 */
-	toReadable(data) {
-		switch (data) {
-			case "N":
-				return "North"
-			case "S":
-				return "South"
-			default:
-				return "Reserved"
-		}
-	}
-}
-
-class GPSLonRefHandler extends ASCIITypeHandler {
-	/**
-	 * @param {string} d
-	 */
-	toReadable(data) {
-		switch (data) {
-			case "E":
-				return "East"
-			case "W":
-				return "West"
-			default:
-				return "Reserved"
-		}
-	}
-}
-
 class GPSPositionHandler extends RationalTypeHandler {
 	/**
 	 * @param {Fraction[]} d
@@ -285,19 +253,6 @@ class GPSPositionHandler extends RationalTypeHandler {
 		}
 
 		return `${d[0].n / d[0].d}°${d[1].n / d[1].d}'${d[2].n / d[2].d}"`
-	}
-}
-
-class GPSAltitudeRefHandler extends ByteTypeHandler {
-	/**
-	 * @param {number[]} data
-	 */
-	toReadable(data) {
-		if (data[0] == 0) {
-			return "At/Above Sea Level"
-		} else {
-			return "Below Sea Level"
-		}
 	}
 }
 
@@ -315,7 +270,11 @@ class GPSTimestampHandler extends RationalTypeHandler {
 		const second = d[2].n / d[2].d
 		const ts = second + minute * 60 + hour * 3600
 
-		return `${Math.floor(ts / 3600)}:${Math.floor(ts / 60 % 60)}:${ts % 60}`
+		const hs = Math.floor(ts / 3600).toString().padStart(2, "0")
+		const ms = Math.floor(ts / 60 % 60).toString().padStart(2, "0")
+		const ss = ((ts % 60) < 10 ? "0" : "") + (ts % 60).toString()
+
+		return `${hs}:${ms}:${ss}`
 	}
 }
 
@@ -539,23 +498,26 @@ defineTag(0xA435, "Lens S/N", 2, ASCIITypeHandler,
  ****** EXIF GPS Metadata ******
  *******************************/
 
-defineTag(1, "Latitude Ref.", 2, GPSLatRefHandler,
-	"Indicates whether the latitude is north or south latitude.",
-	GPS_TAGS
-)
+defineTag(1, "Latitude Ref.", 2, defineEnumHandler(ASCIITypeHandler, {
+	"N": "North",
+	"S": "South"
+}, "Reserved"), "Indicates whether the latitude is north or south latitude.", GPS_TAGS)
 defineTag(2, "Latitude", 2, GPSPositionHandler,
 	"Indicates the latitude in Degrees, minutes, and seconds (DMS)",
 	GPS_TAGS
 )
-defineTag(3, "Longitude Ref.", 2, GPSLonRefHandler,
-	"Indicates whether the longitude is east or west longitude.",
-	GPS_TAGS
-)
+defineTag(3, "Longitude Ref.", 2, defineEnumHandler(ASCIITypeHandler, {
+	"E": "East",
+	"W": "West"
+}, "Reserved"), "Indicates whether the longitude is east or west longitude.", GPS_TAGS)
 defineTag(4, "Longitude", 2, GPSPositionHandler,
 	"Indicates the longitude in Degrees, minutes, and seconds (DMS)",
 	GPS_TAGS
 )
-defineTag(5, "Altitude Reference", 2, GPSAltitudeRefHandler,
+defineTag(5, "Altitude Reference", 2,
+	defineEnumHandler(ByteTypeHandler, {
+		0: "At/Above Sea Level"
+	}, "Below Sea Level"),
 	"Indicates the altitude used as the reference altitude. If the altitude is below sea level, the altitude is " +
 	"indicated as a negative absolute value in the \"Altitude\" tag.",
 	GPS_TAGS
@@ -615,18 +577,18 @@ defineTag(18, "Map Datum", 2, ASCIITypeHandler,
 	"Indicates the geodetic survey data used by the GPS receiver.",
 	GPS_TAGS
 )
-defineTag(19, "Dest. Latitude Ref.", 2, GPSLatRefHandler,
-	"Indicates whether the latitude of the destination point is north or south latitude.",
-	GPS_TAGS
-)
+defineTag(19, "Dest. Latitude Ref.", 2, defineEnumHandler(ASCIITypeHandler, {
+	"N": "North",
+	"S": "South"
+}, "Reserved"), "Indicates whether the latitude of the destination point is north or south latitude.", GPS_TAGS)
 defineTag(20, "Dest. Latitude", 2, GPSPositionHandler,
 	"Indicates the latitude of the destination point in Degrees, minutes, and seconds (DMS)",
 	GPS_TAGS
 )
-defineTag(21, "Dest. Longitude Ref.", 2, GPSLonRefHandler,
-	"Indicates whether the longitude of the destination point is east or west longitude.",
-	GPS_TAGS
-)
+defineTag(21, "Dest. Longitude Ref.", 2, defineEnumHandler(ASCIITypeHandler, {
+	"E": "East",
+	"W": "West"
+}, "Reserved"), "Indicates whether the longitude of the destination point is east or west longitude.", GPS_TAGS)
 defineTag(22, "Dest. Longitude", 2, GPSPositionHandler,
 	"Indicates the longitude of the destination point in Degrees, minutes, and seconds (DMS)",
 	GPS_TAGS
