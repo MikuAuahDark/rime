@@ -39,8 +39,6 @@ class LayoutManager {
 		this.metadataListCheckbox = {}
 		this.dirty = true
 
-		/** @type {HTMLButtonElement} */
-		this.rimeAboutButton = document.getElementById("rime_about_button")
 		/** @type {HTMLDivElement} */
 		this.inputArea = document.getElementById("input_area")
 		/** @type {HTMLImageElement} */
@@ -88,7 +86,6 @@ class LayoutManager {
 		this.inputArea.addEventListener("dragover", this.dragOver.bind(this))
 		this.inputArea.addEventListener("drop", this.dropEvent.bind(this))
 		this.inputFile.addEventListener("change", this.inputFileChange.bind(this))
-		this.rimeAboutButton.addEventListener("click", this.rimeAboutDialog.open.bind(this.rimeAboutDialog))
 
 		// Wire up buttons
 		const exportCSV = this.performExportCSV.bind(this)
@@ -111,6 +108,14 @@ class LayoutManager {
 
 		this.removeMetadataButton.addEventListener("click", this.performMetadataRemoval.bind(this))
 		this.downloadImageButton.addEventListener("click", this.downloadOutputImage.bind(this))
+
+		const showAbout = (e) => {
+			e.preventDefault()
+			this.rimeAboutDialog.open()
+		}
+		for (const elem of document.getElementsByClassName("rime_about_button")) {
+			elem.addEventListener("click", showAbout)
+		}
 	}
 
 	inputAreaClick() {

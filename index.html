@@ -48,7 +48,7 @@
 				align-items: center;
 				justify-content: center;
 				text-align: center;
-				color: #606060;
+				color: var(--mdc-theme-text-hint-on-background);
 			}
 
 			#metadata_info_list {
@@ -62,8 +62,12 @@
 				padding: 16px;
 			}
 
+			.rime_container a:link, .rime_container a:visited {
+				color: var(--mdc-theme-text-hint-on-background);
+			}
+
 			tr.rime_select_disabled .mdc-data-table__cell:not(.mdc-data-table__cell--checkbox) {
-				color: #606060;
+				color: var(--mdc-theme-text-disabled-on-background);
 			}
 
 			tbody tr.mdc-data-table__row td:nth-child(3).mdc-data-table__cell {
@@ -92,6 +96,16 @@
 			.wide_button {
 				width: 100%;
 			}
+
+			#input_area:hover .input_area_container #input_image {
+				filter: opacity(25%) blur(2px) !important;
+				transition: 0.3s;
+			}
+
+			#input_area:hover #input_area_info {
+				visibility: visible !important;
+				transition: 0.3s;
+			}
 		</style>
 	</head>
 	<body class="mdc-typography" style="margin: 0px">
@@ -101,7 +115,7 @@
 					<h1 class="mdc-top-app-bar__title">RIME</h1>
 				</section>
 				<section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-end">
-					<button id="rime_about_button" class="material-icons mdc-top-app-bar__action-item mdc-icon-button" aria-label="About">
+					<button class="rime_about_button material-icons mdc-top-app-bar__action-item mdc-icon-button" aria-label="About">
 						<div class="mdc-icon-button__ripple"></div>
 						info_outline
 					</button>
@@ -111,7 +125,7 @@
 		<main class="mdc-top-app-bar--fixed-adjust">
 			<section class="rime_container">
 				<h2 class="mdc-typography--headline4">Input Image</h2>
-				<p>Click or drag image to open image.</p>
+				<p>Click or drag image to open.</p>
 				<div id="input_area" class="mdc-ripple-surface mdc-elevation--z1">
 					<div class="input_area_container" style="z-index: 0">
 						<!-- Non-dragged: filter: opacity(100%) blur(0px); -->
@@ -123,7 +137,7 @@
 					<!-- Dragged: visibility: visible; -->
 					<!-- Else: height: 300px; visibility: visible; -->
 					<div id="input_area_info" class="input_area_container" style="height: 300px; visibility: visible; z-index: 1">
-						<span class="material-icons">file_open</span>&nbsp;Drag and drop or click here to select image.
+						<span class="material-icons">file_open</span>&nbsp;Drag and drop or click the area to select image.
 					</div>
 				</div>
 				<input id="input_file" type="file" accept="image/jpeg" hidden>
@@ -239,8 +253,8 @@
 					<h2 class="mdc-dialog__title" id="rime_about_title">About RIME</h2>
 					<div class="mdc-dialog__content" id="rime_about_content">
 						RIME is a progressive web application that reads and remove image metadata in your browser.
-						All images submitted does not leave your browser. It works without internet connection once
-						the web page/app is fully loaded.
+						All images submitted in here is processed locally without being sent to any servers.
+						It works without internet connection once the web page/app is fully loaded.
 						<br>
 						<br>
 						The project is open-source and can be found on GitHub:
@@ -280,7 +294,14 @@
 		</div>
 		<footer>
 			<div class="rime_container">
-				<p>This software is provided without warranty whatsover.</p>
+				<p>
+					<a class="rime_about_button" href="#">About</a> |
+					<a href="https://github.com/MikuAuahDark/rime" target="_blank">Source Code</a> |
+					<a href="https://github.com/MikuAuahDark/rime/issues" target="_blank">Issue Tracker</a>
+				</p>
+				<p>
+					Academy version. <a href="https://mikuauahdark.github.io/rime/" target="_blank">Click here for the mainline version</a>
+				</p>
 			</div>
 		</footer>
 	</body>
