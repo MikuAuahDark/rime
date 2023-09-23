@@ -606,6 +606,12 @@ function main() {
 
 		throw new Error("assertion failed")
 	})
+
+	if ("serviceWorker" in navigator) {
+		navigator.serviceWorker.register("worker.mjs").then((reg) => {
+			console.log("Registration succeeded. Scope is " + reg.scope)
+		})
+	}
 }
 
 if (document.readyState !== "loading") {
