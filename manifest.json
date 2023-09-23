@@ -1,0 +1,17 @@
+{
+	"name": "RIME",
+	"short_name": "RIME",
+	"description": "Read & Remove Image Metadata.",
+	"id": "the_rime_project",
+	"theme_color": "#238119",
+	"background_color": "#fff",
+	"display": "standalone",
+	"icons": [
+		{
+			"src": "favicon.svg",
+			"sizes": "128x128 192x192 256x256 384x384 512x512",
+			"type": "image/svg+xml"
+		}
+	],
+	"start_url": "./index.html"
+}
