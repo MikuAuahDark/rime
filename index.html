@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 	<head>
 		<title>RIME</title>
 		<meta charset="UTF-8">
@@ -8,6 +8,7 @@
 		<meta name="keywords" content="jpeg, exif, metadata, image">
 		<meta name="author" content="Miku AuahDark">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="theme-color" content="#238119">
 		<link rel="icon" type="image/svg+xml" href="favicon.svg">
 		<link rel="manifest" type="application/json" href="manifest.json">
 		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/material-components-web@14.0.0/dist/material-components-web.min.css" integrity="sha256-YPguGDqg55HB8+tbrJBbWuiF9J+XCK7sjscaiwFMTxI=" crossorigin="anonymous">
@@ -51,7 +52,11 @@
 				align-items: center;
 				justify-content: center;
 				text-align: center;
-				color: var(--mdc-theme-text-hint-on-background);
+				color: var(--mdc-theme-text-secondary-on-light);
+			}
+
+			img[src=""] {
+				visibility: hidden;
 			}
 
 			#metadata_info_list {
@@ -66,7 +71,7 @@
 			}
 
 			.rime_container a:link, .rime_container a:visited {
-				color: var(--mdc-theme-text-hint-on-background);
+				color: var(--mdc-theme-text-secondary-on-light);
 			}
 
 			tr.rime_select_disabled .mdc-data-table__cell:not(.mdc-data-table__cell--checkbox) {
@@ -129,11 +134,11 @@
 			<section class="rime_container">
 				<h2 class="mdc-typography--headline4">Input Image</h2>
 				<p>Click or drag image to open.</p>
-				<div id="input_area" class="mdc-ripple-surface mdc-elevation--z1">
+				<div id="input_area" class="mdc-ripple-surface mdc-elevation--z1" tabindex="0">
 					<div class="input_area_container" style="z-index: 0">
 						<!-- Non-dragged: filter: opacity(100%) blur(0px); -->
 						<!-- Dragged: filter: opacity(25%) blur(2px); -->
-						<img id="input_image" style="filter: opacity(100%) blur(0px);" src="">
+						<img title="Input Image" id="input_image" style="filter: opacity(100%) blur(0px);" src="">
 					</div>
 					<!-- If there's image already: -->
 					<!-- Non-dragged: visibility: hidden; -->
@@ -231,7 +236,7 @@
 				<h2 class="mdc-typography--headline4">Output Image</h2>
 				<p id="dirty">The output image below does not reflect the selected metadata to be removed. Click the button above to refresh.</p>
 				<div id="rime_image_container">
-					<img id="output_image" class="mdc-elevation--z4" src="">
+					<img title="Output Image"" id="output_image" class="mdc-elevation--z4" src="">
 				</div>
 				<button id="download_image" class="mdc-button mdc-button--raised wide_button">
 					<span class="mdc-button__ripple"></span>

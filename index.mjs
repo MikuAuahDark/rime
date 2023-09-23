@@ -85,6 +85,7 @@ class LayoutManager {
 		this.inputArea.addEventListener("dragleave", this.dragLeave.bind(this))
 		this.inputArea.addEventListener("dragover", this.dragOver.bind(this))
 		this.inputArea.addEventListener("drop", this.dropEvent.bind(this))
+		this.inputArea.addEventListener("keyup", this.inputAreaPress.bind(this))
 		this.inputFile.addEventListener("change", this.inputFileChange.bind(this))
 
 		// Wire up buttons
@@ -120,6 +121,16 @@ class LayoutManager {
 
 	inputAreaClick() {
 		this.inputFile.click()
+	}
+
+	/**
+	 * 
+	 * @param {KeyboardEvent} e
+	 */
+	inputAreaPress(e) {
+		if (e.key == "Enter") {
+			this.inputAreaClick()
+		}
 	}
 
 	/**
