@@ -247,10 +247,6 @@ export class JPEGMetadata extends Metadata {
 			delete this.parsedTiffData[0][EXIF_IFD_ID]
 		}
 
-		if (Object.keys(this.parsedExifData).length == 0) {
-			throw new Error("No EXIF data present.")
-		}
-
 		if (GPS_IFD_ID in this.parsedTiffData[0]) {
 			const gpsIFDOffset = this.parsedTiffData[0][GPS_IFD_ID].parsedData[0]
 			this.hasGPS = true
