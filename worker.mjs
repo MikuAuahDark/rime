@@ -38,10 +38,15 @@ async function doCacheFont(path) {
 
 async function doCache() {
 	const toBeCached = ASSETS_TO_CACHE.slice()
+	const cachedFont = []
 
 	for (const font of FONTS_TO_CACHE) {
-		const fontFiles = await doCacheFont(font)
-		toBeCached.push(font, ...fontFiles)
+		toBeCached.push(font)
+		cachedFont.push(doCacheFont(font))
+	}
+
+	for (const fontUrls of (await Promise.all(cachedFont))) {
+		toBeCached.push(...fontUrls)
 	}
 
 	const cacheSession = await caches.open(CACHE_NAME)
