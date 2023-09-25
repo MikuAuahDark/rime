@@ -1,3 +1,4 @@
+/// <reference lib="webworker" /> 
 const CACHE_NAME = "rime-cache-v1"
 // NOTE: When adding new files, add it here!
 const ASSETS_TO_CACHE = [
@@ -20,6 +21,9 @@ const FONTS_TO_CACHE = [
 	"https://fonts.googleapis.com/css2?family=Roboto&display=swap",
 	"https://fonts.googleapis.com/icon?family=Material+Icons&display=swap"
 ]
+
+/**@type {ServiceWorkerGlobalScope} */
+const sw = self
 
 /**
  * @param {string} path
@@ -55,10 +59,33 @@ async function doCache() {
 	}))
 }
 
-self.addEventListener("install", (event) => {
+/**
+ * 
+ * @param {Request} request
+ */
+async function requestAndCache(request) {
+	let response = null
+
+	try {
+		response = await fetch(request)
+	} catch (error) {
+		const cacheSession = await caches.open(CACHE_NAME)
+		return await cacheSession.match(request)
+	}
+
+	if (response.ok) {
+		const dup = response.clone()
+		const cacheSession = await caches.open(CACHE_NAME)
+		cacheSession.add(dup)
+	}
+
+	return response
+}
+
+sw.addEventListener("install", (event) => {
 	event.waitUntil(doCache())
 })
 
-self.addEventListener("fetch", (event) => {
-	event.respondWith(caches.match(event.request))
+sw.addEventListener("fetch", (event) => {
+	event.respondWith(requestAndCache(event.request))
 })
