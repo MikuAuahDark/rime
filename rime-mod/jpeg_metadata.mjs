@@ -3,6 +3,7 @@ import { GPS_TAGS, TIFF_TAGS } from "./jpeg_tiff_tags.mjs"
 import { RawIFDData, getElementSize, ParsedIFDData, TIFF_LONG } from "./jpeg_tiff_tag_type.mjs"
 import { readUint16, readUint32, writeUint16, writeUint32 } from "./binary_manipulation.mjs"
 import { EXIF_IDENTIFIER, EXIF_IFD_ID, GPS_IFD_ID, INTEROP_IFD_ID, MARKER_INVALID } from "./jpeg_const.mjs"
+import { MalformedTIFFError, NoEXIFError } from "./error.mjs"
 
 const EXIF_HEADER = new Uint8Array(EXIF_IDENTIFIER)
 
@@ -109,12 +110,12 @@ function parseTIFF(data, offset, destParsed, destRaw) {
 	if (data[offset] == 77 && data[offset + 1] == 77) {
 		bigEndian = true
 	} else if (data[offset] != 73 || data[offset + 1] != 73) {
-		throw new Error("Invalid TIFF header while parsing.")
+		throw new MalformedTIFFError()
 	}
 
 	const number42 = readUint16(data, offset + 2, bigEndian)
 	if (number42 != 42) {
-		throw new Error("Invalid TIFF header while parsing.")
+		throw new MalformedTIFFError()
 	}
 
 	// Time to parse IFD
@@ -201,14 +202,14 @@ export class JPEGMetadata extends Metadata {
 		}
 
 		if (!exifFound) {
-			throw new Error("No EXIF data present.")
+			throw new NoEXIFError()
 		}
 
 		// Parse EXIF data
 		const exifData = consolidateUint8Array(exifs)
 		window.lastExifData = exifData
 		if (!hasEXIFData(exifData, 0)) {
-			throw new Error("No EXIF data present.")
+			throw new NoEXIFError()
 		}
 
 		// The "Tiff" data is the one in IFDs
@@ -230,7 +231,7 @@ export class JPEGMetadata extends Metadata {
 		this.bigEndian = parseTIFF(exifData, 6, this.parsedTiffData, this.rawTiffData)
 
 		if (this.parsedTiffData.length == 0 || Object.keys(this.parsedTiffData[0]).length == 0) {
-			throw new Error("No EXIF data present.")
+			throw new NoEXIFError()
 		}
 
 		// Check EXIF IFD
