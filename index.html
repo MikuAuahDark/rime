@@ -251,10 +251,13 @@
 		</main>
 		<aside id="error_alert" class="mdc-snackbar">
 			<div class="mdc-snackbar__surface" role="status" aria-relevant="additions">
-				<div class="mdc-snackbar__label" aria-atomic="false"></div>
+				<div class="mdc-snackbar__label" aria-atomic="false">
+					Error message here
+				</div>
 				<div class="mdc-snackbar__actions" aria-atomic="true">
-					<button class="mdc-icon-button mdc-snackbar__dismiss material-icons" title="Dismiss">
-						close
+					<button type="button" class="mdc-button mdc-snackbar__action">
+						<div class="mdc-button__ripple"></div>
+						<span class="mdc-button__label">Details</span>
 					</button>
 				</div>
 			</div>
@@ -293,6 +296,29 @@
 						<br>
 						<br>
 						This metadata cannot be removed.
+					</div>
+					<div class="mdc-dialog__actions">
+						<button type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="close">
+							<div class="mdc-button__ripple"></div>
+							<span class="mdc-button__label">Ok</span>
+						</button>
+					</div>
+				</div>
+			</div>
+			<div class="mdc-dialog__scrim"></div>
+		</div>
+		<div id="rime_error_message" class="mdc-dialog">
+			<div class="mdc-dialog__container">
+				<div class="mdc-dialog__surface" role="alertdialog" aria-modal="true" aria-labelledby="rime_metadata_description_title" aria-describedby="rime_metadata_description_content">
+					<h2 class="mdc-dialog__title" id="rime_error_title">Short Error Message</h2>
+					<div class="mdc-dialog__content" id="rime_error_content">
+						Long Error Message (or no detailed information available)
+						<br>
+						<br>
+						<details>
+							<summary>Technical Information</summary>
+							Traceback here
+						</details>
 					</div>
 					<div class="mdc-dialog__actions">
 						<button type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="close">

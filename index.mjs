@@ -1,3 +1,4 @@
+import { RIMEError } from "./rime-mod/error.mjs"
 import { loadMetadata } from "./rime-mod/main.mjs"
 import { Metadata, MetadataResult } from "./rime-mod/metadata.mjs"
 import { metadataToCSV } from "./rime-mod/metadata_to_csv.mjs"
@@ -38,6 +39,7 @@ class LayoutManager {
 		/** @type {{[key: string]: HTMLInputElement}} */
 		this.metadataListCheckbox = {}
 		this.dirty = true
+		this.lastError = null
 
 		/** @type {HTMLDivElement} */
 		this.inputArea = document.getElementById("input_area")
@@ -69,12 +71,21 @@ class LayoutManager {
 		this.rimeMetadataDescriptionTitle = document.getElementById("rime_metadata_description_title")
 		/** @type {HTMLDivElement} */
 		this.rimeMetadataDescriptionContent = document.getElementById("rime_metadata_description_content")
+		/** @type {HTMLElement} */
+		this.errorAlertElement = document.getElementById("error_alert")
+		/** @type {HTMLDivElement} */
+		this.rimeErrorMessage = document.getElementById("rime_error_message")
+		/** @type {HTMLHeadingElement} */
+		this.rimeErrorMessageTitle = document.getElementById("rime_error_title")
+		/** @type {HTMLDivElement} */
+		this.rimeErrorMessageContent = document.getElementById("rime_error_content")
 
 		// Initialize styles
 		this.topBar = new mdc.topAppBar.MDCTopAppBar(document.querySelector(".mdc-top-app-bar"))
-		this.errorAlert = new mdc.snackbar.MDCSnackbar(document.getElementById("error_alert"))
+		this.errorAlert = new mdc.snackbar.MDCSnackbar(this.errorAlertElement)
 		this.metadataListTableMDC = new mdc.dataTable.MDCDataTable(this.metadataListTable)
 		this.rimeAboutDialog = new mdc.dialog.MDCDialog(document.getElementById("rime_about"))
+		this.rimeErrorDialog = new mdc.dialog.MDCDialog(this.rimeErrorMessage)
 		this.rimeMetadataDescriptionDialog = new mdc.dialog.MDCDialog(
 			document.getElementById("rime_metadata_description")
 		)
@@ -117,6 +128,9 @@ class LayoutManager {
 		for (const elem of document.getElementsByClassName("rime_about_button")) {
 			elem.addEventListener("click", showAbout)
 		}
+
+		const errActionButton = this.errorAlertElement.querySelector("span.mdc-button__label")
+		errActionButton.addEventListener("click", this.showDetailedError.bind(this))
 	}
 
 	inputAreaClick() {
@@ -238,6 +252,7 @@ class LayoutManager {
 	}
 
 	showError(message) {
+		this.lastError = message
 		window.getLastError = message
 
 		let msg = ""
@@ -249,6 +264,59 @@ class LayoutManager {
 
 		this.errorAlert.labelText = msg
 		this.errorAlert.open()
+	}
+
+	showDetailedError() {
+		if (this.lastError) {
+			let shortMessage = ""
+			let longMessage = ""
+			let stack = ""
+
+			if (this.lastError instanceof Error) {
+				shortMessage = this.lastError.message
+				stack = this.lastError.stack ?? ""
+
+				if (this.lastError instanceof RIMEError) {
+					longMessage = this.lastError.longMessage
+				}
+			} else {
+				shortMessage = this.lastError.toString()
+			}
+
+			const elements = []
+			this.rimeErrorMessageTitle.textContent = shortMessage
+
+			if (longMessage) {
+				elements.push(document.createTextNode(longMessage))
+			} else {
+				elements.push(document.createTextNode("No additional information available."))
+			}
+
+			if (stack) {
+				const details = document.createElement("details")
+				const summary = document.createElement("summary")
+				const bt = []
+
+				for (const line of stack.split("\n")) {
+					bt.push(
+						document.createTextNode(line),
+						document.createElement("br")
+					)
+				}
+
+				summary.textContent = "Technical Information"
+				details.replaceChildren(summary, ...bt)
+
+				elements.push(
+					document.createElement("br"),
+					document.createElement("br"),
+					details
+				)
+			}
+
+			this.rimeErrorMessageContent.replaceChildren(...elements)
+			this.rimeErrorDialog.open()
+		}
 	}
 
 	/**
