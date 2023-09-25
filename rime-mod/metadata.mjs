@@ -58,7 +58,18 @@ export class Metadata {
 		throw new Error("need to override mimeType")
 	}
 
-	static test() {
+	/**
+	 * @param {Uint8Array} file File to test.
+	 * @returns {boolean} `true` if this class can parse this file and its metadata.
+	 */
+	static test(file) {
 		return false
+	}
+
+	/**
+	 * Get the friendly name of the file name type.
+	 */
+	static name() {
+		return "Metadata"
 	}
 }

@@ -550,4 +550,8 @@ export class JPEGMetadata extends Metadata {
 	static test(file) {
 		return file.length >= 2 && file[0] == 0xFF && file[1] == 0xD8
 	}
+
+	static name() {
+		return "JPEG"
+	}
 }

@@ -26,6 +26,8 @@ export function loadMetadata(file) {
 					errors.push(error.toString())
 				}
 			}
+		} else {
+			errors.push("Not " + parser.name())
 		}
 	}
 
