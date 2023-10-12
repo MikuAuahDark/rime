@@ -1,4 +1,3 @@
-import { Fraction } from "./fraction.mjs"
 import { readUint16, readUint32, writeUint16, writeUint32 } from "./binary_manipulation.mjs"
 
 export const TIFF_LONG = 4
@@ -75,6 +74,22 @@ export class ParsedIFDData {
 	 */
 	encode(bigEndian) {
 		return this.handler.encode(this.parsedData, bigEndian)
+	}
+}
+
+export class Fraction {
+	/**
+	 * 
+	 * @param {number} n
+	 * @param {number} d
+	 */
+	constructor(n, d) {
+		this.n = n
+		this.d = d
+	}
+
+	toString() {
+		return (this.n / this.d).toString()
 	}
 }
 

@@ -1,5 +1,18 @@
-import { Fraction } from "./fraction.mjs"
-import { TagTypeHandler, ByteTypeHandler, ASCIITypeHandler, ShortTypeHandler, LongTypeHandler, RationalTypeHandler, UndefinedTypeHandler, ShortOrLongTypeHandler } from "./jpeg_tiff_tag_type.mjs"
+import {
+	ByteTypeHandler,
+	ASCIITypeHandler,
+	ShortTypeHandler,
+	LongTypeHandler,
+	RationalTypeHandler,
+	UndefinedTypeHandler,
+	ShortOrLongTypeHandler,
+	Fraction
+} from "./jpeg_tiff_tag_type.mjs"
+
+/**
+ * @typedef {import("./jpeg_tiff_tag_type.mjs").TagTypeHandler} TagTypeHandler
+ * @typedef {import("./jpeg_tiff_tag_type.mjs").Fraction} Fraction
+ */
 
 /** @type {Map<number, {name: string, handler: TagTypeHandler, level: number, info: string}>} */
 export const TIFF_TAGS = new Map()

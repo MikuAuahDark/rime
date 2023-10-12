@@ -49,7 +49,5 @@ module.exports = {
 			{"code": 120}
 		],
 	},
-	"ignorePatterns": [
-		"rime-mod/fraction.mjs"
-	]
+	"ignorePatterns": []
 }

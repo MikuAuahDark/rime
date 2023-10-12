@@ -7,7 +7,6 @@ const ASSETS_TO_CACHE = [
 	"./index.mjs",
 	"./rime-mod/binary_manipulation.mjs",
 	"./rime-mod/error.mjs",
-	"./rime-mod/fraction.mjs",
 	"./rime-mod/jpeg_const.mjs",
 	"./rime-mod/jpeg_metadata.mjs",
 	"./rime-mod/jpeg_tiff_tag_type.mjs",
