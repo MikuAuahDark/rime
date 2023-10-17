@@ -296,7 +296,7 @@ class RationalToFloatHandler extends RationalTypeHandler {
 	 * @param {Fraction[]} d
 	 */
 	toReadable(d) {
-		return (d[0].n / d[0].d).toString()
+		return d[0].d == 0 ? "0" : (d[0].n / d[0].d).toString()
 	}
 }
 
