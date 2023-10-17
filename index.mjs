@@ -129,7 +129,7 @@ class LayoutManager {
 			elem.addEventListener("click", showAbout)
 		}
 
-		const errActionButton = this.errorAlertElement.querySelector("span.mdc-button__label")
+		const errActionButton = this.errorAlertElement.querySelector("button.mdc-button")
 		errActionButton.addEventListener("click", this.showDetailedError.bind(this))
 	}
 
