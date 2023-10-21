@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<title>RIME</title>
+	<meta charset="UTF-8">
+	<meta name="application-name" content="RIME">
+	<meta name="description" content="Read & Remove Image Metadata.">
+	<meta name="keywords" content="jpeg, exif, metadata, image">
+	<meta name="author" content="Miku AuahDark">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#238119">
+	<link rel="icon" type="image/svg+xml" href="favicon.svg">
+	<link rel="manifest" type="application/json" href="manifest.json">
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+	<link rel="preload"
+		href="https://cdn.jsdelivr.net/npm/material-components-web@14.0.0/dist/material-components-web.min.css"
+		integrity="sha256-YPguGDqg55HB8+tbrJBbWuiF9J+XCK7sjscaiwFMTxI=" crossorigin="anonymous" as="style">
+	<link rel="preload" href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" as="style">
+	<link rel="preload" href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap" as="style">
+	<link rel="stylesheet"
+		href="https://cdn.jsdelivr.net/npm/material-components-web@14.0.0/dist/material-components-web.min.css"
+		integrity="sha256-YPguGDqg55HB8+tbrJBbWuiF9J+XCK7sjscaiwFMTxI=" crossorigin="anonymous" media="print"
+		onload="this.media='all'">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" media="print"
+		onload="this.media='all'">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap" media="print"
+		onload="this.media='all'">
+	<script src="https://cdn.jsdelivr.net/npm/material-components-web@14.0.0/dist/material-components-web.min.js"
+		integrity="sha256-8DHMt+TYs1kVcO+R+oZYTrHYIYwHUOChiQsqKb2BT3g=" crossorigin="anonymous"></script>
+	<script type="module" src="index.mjs" async></script>
+	<script>
+		function hitit() {
+			for (const button of document.querySelectorAll("td.mdc-data-table__cell.rime_cell_help button.mdc-icon-button material-icons")) {
+				(new mdc.ripple.MDCRipple(button)).unbounded = true
+			}
+		}
+
+		if (document.readyState !== "loading") {
+			hitit()
+		} else {
+			document.addEventListener("DOMContentLoaded", hitit)
+		}
+	</script>
+	<style>
+		:root {
+			--output-image-max-height: 420px;
+			--mdc-theme-primary: #238119;
+			--mdc-theme-secondary: #771981;
+		}
+
+		#input_area {
+			width: 100%;
+			max-height: var(--output-image-max-height);
+			display: grid;
+			grid-template-columns: 1fr;
+			grid-template-rows: 1fr;
+			cursor: pointer;
+		}
+
+		#input_area * {
+			pointer-events: none;
+		}
+
+		.input_area_container {
+			width: 100%;
+			max-height: var(--output-image-max-height);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			text-align: center;
+			grid-column: 1;
+			grid-row: 1;
+		}
+
+		footer {
+			margin: 16px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			text-align: center;
+			color: var(--mdc-theme-text-secondary-on-light);
+		}
+
+		img[src=""] {
+			visibility: hidden;
+		}
+
+		#metadata_info_list {
+			margin-top: 1em;
+		}
+
+		.rime_container {
+			max-width: 1200px;
+			margin-left: auto;
+			margin-right: auto;
+			padding: 16px;
+		}
+
+		.rime_container a:link,
+		.rime_container a:visited {
+			color: var(--mdc-theme-text-secondary-on-light);
+		}
+
+		tr.rime_select_disabled .mdc-data-table__cell:not(.mdc-data-table__cell--checkbox) {
+			color: var(--mdc-theme-text-disabled-on-background);
+		}
+
+		tbody tr.mdc-data-table__row td:nth-child(3).mdc-data-table__cell {
+			max-width: 250px;
+		}
+
+		#rime_image_container {
+			max-height: var(--output-image-max-height);
+			margin: 1em auto 1em auto;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		#rime_image_container img,
+		#input_area img {
+			max-width: 100%;
+			max-height: inherit;
+		}
+
+		.rime_cell_help {
+			width: 1px;
+			color: var(--mdc-theme-text-primary-on-background) !important;
+			text-align: center
+		}
+
+		.wide_button {
+			width: 100%;
+		}
+
+		#input_area:hover .input_area_container #input_image {
+			filter: opacity(25%) blur(2px) !important;
+			transition: 0.3s;
+		}
+
+		#input_area:hover #input_area_info {
+			visibility: visible !important;
+			transition: 0.3s;
+		}
+	</style>
+</head>
+
+<body class="mdc-typography" style="margin: 0px">
+	<header class="mdc-top-app-bar">
+		<div class="mdc-top-app-bar__row">
+			<section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-start">
+				<h1 class="mdc-top-app-bar__title">RIME</h1>
+			</section>
+			<section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-end">
+				<button class="rime_about_button material-icons mdc-top-app-bar__action-item mdc-icon-button"
+					aria-label="About">
+					<div class="mdc-icon-button__ripple"></div>
+					info_outline
+				</button>
+			</section>
+		</div>
+	</header>
+	<main class="mdc-top-app-bar--fixed-adjust">
+		<section class="rime_container">
+			<h2 class="mdc-typography--headline4">Input Image</h2>
+			<p>Click or drag image to open.</p>
+			<div id="input_area" class="mdc-ripple-surface mdc-elevation--z1" tabindex="0">
+				<div class="input_area_container" style="z-index: 0">
+					<!-- Non-dragged: filter: opacity(100%) blur(0px); -->
+					<!-- Dragged: filter: opacity(25%) blur(2px); -->
+					<img title="Input Image" id="input_image" style="filter: opacity(100%) blur(0px);"
+						src="test_input.jpg">
+				</div>
+				<!-- If there's image already: -->
+				<!-- Non-dragged: visibility: hidden; -->
+				<!-- Dragged: visibility: visible; -->
+				<!-- Else: height: 300px; visibility: visible; -->
+				<div id="input_area_info" class="input_area_container" style="visibility: hidden; z-index: 1">
+					<span class="material-icons">file_open</span>&nbsp;Drag and drop or click the area to select image.
+				</div>
+			</div>
+			<input id="input_file" type="file" accept="image/jpeg" hidden>
+		</section>
+		<a id="download_clicker" style="display: none"></a>
+		<!-- If no state: display: none; -->
+		<!-- Else: display: block; -->
+		<section id="metadata_info_list" class="rime_container" style="display: block">
+			<!-- .rime_buttons must appear in the order in the index.mjs -->
+			<div class="mdc-layout-grid">
+				<div class="mdc-layout-grid__inner rime_buttons">
+					<button
+						class="mdc-layout-grid__cell mdc-layout-grid__cell--span-3-desktop mdc-button mdc-button--outlined">
+						<span class="mdc-button__ripple"></span>
+						<span class="mdc-button__label">Export to CSV</span>
+					</button>
+					<button
+						class="mdc-layout-grid__cell mdc-layout-grid__cell--span-3-desktop mdc-button mdc-button--outlined">
+						<span class="mdc-button__ripple"></span>
+						<span class="mdc-button__label">Clear Selection</span>
+					</button>
+					<button
+						class="mdc-layout-grid__cell mdc-layout-grid__cell--span-3-desktop mdc-button mdc-button--outlined">
+						<span class="mdc-button__ripple"></span>
+						<span class="mdc-button__label">Select Recommended</span>
+					</button>
+					<button
+						class="mdc-layout-grid__cell mdc-layout-grid__cell--span-3-desktop mdc-button mdc-button--outlined">
+						<span class="mdc-button__ripple"></span>
+						<span class="mdc-button__label">Select All</span>
+					</button>
+				</div>
+			</div>
+			<!-- Metadata list -->
+			<div id="metadata_list_table" class="mdc-data-table" style="width: 100%">
+				<div class="mdc-data-table__table-container">
+					<table class="mdc-data-table__table" aria-label="Dessert calories">
+						<thead>
+							<tr class="mdc-data-table__header-row">
+								<th class="mdc-data-table__header-cell mdc-data-table__header-cell--checkbox"
+									role="columnheader" scope="col">
+									<div class="mdc-checkbox mdc-data-table__header-row-checkbox mdc-checkbox--selected"
+										style="display: none">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-label="Toggle all rows" disabled>
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</th>
+								<th class="mdc-data-table__header-cell" role="columnheader" scope="col">Metadata Name
+								</th>
+								<th class="mdc-data-table__header-cell" role="columnheader" scope="col">Metadata Value
+								</th>
+								<th class="mdc-data-table__header-cell rime_cell_help" role="columnheader" scope="col">
+									Info</th>
+							</tr>
+						</thead>
+						<tbody class="mdc-data-table__content" id="metadata_list">
+							<tr class="mdc-data-table__row rime_select_disabled" data-row-id="metadata__256"
+								aria-selected="false">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__256" disabled>
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Image Width</th>
+								<td class="mdc-data-table__cell">4032 pixels</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row rime_select_disabled" data-row-id="metadata__257"
+								aria-selected="false">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__257" disabled>
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Image Height</th>
+								<td class="mdc-data-table__cell">3024 pixels</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row mdc-data-table__row--selected" data-row-id="metadata__271"
+								aria-selected="true">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox mdc-checkbox--selected">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__271" checked>
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Manufacturer</th>
+								<td class="mdc-data-table__cell">samsung</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row mdc-data-table__row--selected" data-row-id="metadata__272"
+								aria-selected="true">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox mdc-checkbox--selected">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__272" checked>
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Model Name</th>
+								<td class="mdc-data-table__cell">SM-A528B</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row rime_select_disabled" data-row-id="metadata__274"
+								aria-selected="false">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__274" disabled>
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Orientation</th>
+								<td class="mdc-data-table__cell">Top Left</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row rime_select_disabled" data-row-id="metadata__282"
+								aria-selected="false">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__282" disabled>
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">X Resolution</th>
+								<td class="mdc-data-table__cell">72/1</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row rime_select_disabled" data-row-id="metadata__283"
+								aria-selected="false">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__283" disabled>
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Y Resolution</th>
+								<td class="mdc-data-table__cell">72/1</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row rime_select_disabled" data-row-id="metadata__296"
+								aria-selected="false">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__296" disabled>
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Resolution Unit</th>
+								<td class="mdc-data-table__cell">Inch</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row mdc-data-table__row--selected" data-row-id="metadata__305"
+								aria-selected="true">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox mdc-checkbox--selected">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__305" checked>
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Software</th>
+								<td class="mdc-data-table__cell">HDR+ 1.0.361024316nd</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row mdc-data-table__row--selected" data-row-id="metadata__306"
+								aria-selected="true">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox mdc-checkbox--selected">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__306" checked>
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Date &amp; Time</th>
+								<td class="mdc-data-table__cell">2023:04:12 17:11:50</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row" data-row-id="metadata__33434" aria-selected="false">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__33434">
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Exposure Time</th>
+								<td class="mdc-data-table__cell">158/1000000 second(s)</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row" data-row-id="metadata__33437" aria-selected="false">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__33437">
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">f-number</th>
+								<td class="mdc-data-table__cell">f/1.8</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row" data-row-id="metadata__34850" aria-selected="false">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__34850">
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Exposure Program</th>
+								<td class="mdc-data-table__cell">Normal Program</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row" data-row-id="metadata__34855" aria-selected="false">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__34855">
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Photo Sensitivity</th>
+								<td class="mdc-data-table__cell">40</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row mdc-data-table__row--selected" data-row-id="metadata__36867"
+								aria-selected="true">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox mdc-checkbox--selected">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__36867" checked>
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Original Date &amp; Time</th>
+								<td class="mdc-data-table__cell">2023:04:12 17:11:50</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row mdc-data-table__row--selected" data-row-id="metadata__36868"
+								aria-selected="true">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox mdc-checkbox--selected">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__36868" checked>
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Digitized Date &amp; Time</th>
+								<td class="mdc-data-table__cell">2023:04:12 17:11:50</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row mdc-data-table__row--selected" data-row-id="metadata__36880"
+								aria-selected="true">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox mdc-checkbox--selected">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__36880" checked>
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Time Offset</th>
+								<td class="mdc-data-table__cell">+08:00</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row mdc-data-table__row--selected" data-row-id="metadata__36881"
+								aria-selected="true">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox mdc-checkbox--selected">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__36881" checked>
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Original Time Offset</th>
+								<td class="mdc-data-table__cell">+08:00</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row mdc-data-table__row--selected" data-row-id="metadata__36882"
+								aria-selected="true">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox mdc-checkbox--selected">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__36882" checked>
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Digitized Time Offset</th>
+								<td class="mdc-data-table__cell">+08:00</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row" data-row-id="metadata__37382" aria-selected="false">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__37382">
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Subject Distance</th>
+								<td class="mdc-data-table__cell">1.236 meter(s)</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row" data-row-id="metadata__37383" aria-selected="false">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__37383">
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Metering Mode</th>
+								<td class="mdc-data-table__cell">Center Weighted Average</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row" data-row-id="metadata__37385" aria-selected="false">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__37385">
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Flash Status</th>
+								<td class="mdc-data-table__cell">Not Fired, No Return Detection, Compulsory Suppression,
+									No Flash, No Red-Eye Reduction</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row" data-row-id="metadata__37386" aria-selected="false">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__37386">
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Focal Length</th>
+								<td class="mdc-data-table__cell">5230/1000 mm</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row mdc-data-table__row--selected" data-row-id="metadata__37520"
+								aria-selected="true">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox mdc-checkbox--selected">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__37520" checked>
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Subsecond Time</th>
+								<td class="mdc-data-table__cell">530</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row mdc-data-table__row--selected" data-row-id="metadata__37521"
+								aria-selected="true">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox mdc-checkbox--selected">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__37521" checked>
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Original Subsecond Time</th>
+								<td class="mdc-data-table__cell">530</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row mdc-data-table__row--selected" data-row-id="metadata__37522"
+								aria-selected="true">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox mdc-checkbox--selected">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__37522" checked>
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Digitized Subsecond Time</th>
+								<td class="mdc-data-table__cell">530</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row" data-row-id="metadata__41495" aria-selected="false">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__41495">
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Sensing Method</th>
+								<td class="mdc-data-table__cell">One-Chip Color Area Sensor</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row" data-row-id="metadata__41729" aria-selected="false">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__41729">
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Scene Type</th>
+								<td class="mdc-data-table__cell">Direct Photograph</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row" data-row-id="metadata__16" aria-selected="false">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__16">
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Image Direction Ref.</th>
+								<td class="mdc-data-table__cell">Magnetic Direction</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+							<tr class="mdc-data-table__row" data-row-id="metadata__17" aria-selected="false">
+								<td class="mdc-data-table__cell mdc-data-table__cell--checkbox">
+									<div class="mdc-checkbox mdc-data-table__row-checkbox">
+										<input type="checkbox" class="mdc-checkbox__native-control"
+											aria-labelledby="metadata__17">
+										<div class="mdc-checkbox__background">
+											<svg class="mdc-checkbox__checkmark" viewBox="0 0 24 24">
+												<path class="mdc-checkbox__checkmark-path" fill="none"
+													d="M1.73,12.91 8.1,19.28 22.79,4.59" />
+											</svg>
+											<div class="mdc-checkbox__mixedmark"></div>
+										</div>
+										<div class="mdc-checkbox__ripple"></div>
+									</div>
+								</td>
+								<th scope="row" class="mdc-data-table__cell">Image Direction</th>
+								<td class="mdc-data-table__cell">236 degrees</td>
+								<td class="mdc-data-table__cell rime_cell_help">
+									<button class="mdc-icon-button material-icons">
+										<div class="mdc-icon-button__ripple"></div>
+										help
+									</button>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<div class="mdc-layout-grid">
+				<div class="mdc-layout-grid__inner rime_buttons">
+					<button
+						class="mdc-layout-grid__cell mdc-layout-grid__cell--span-3-desktop mdc-button mdc-button--outlined">
+						<span class="mdc-button__ripple"></span>
+						<span class="mdc-button__label">Export to CSV</span>
+					</button>
+					<button
+						class="mdc-layout-grid__cell mdc-layout-grid__cell--span-3-desktop mdc-button mdc-button--outlined">
+						<span class="mdc-button__ripple"></span>
+						<span class="mdc-button__label">Clear Selection</span>
+					</button>
+					<button
+						class="mdc-layout-grid__cell mdc-layout-grid__cell--span-3-desktop mdc-button mdc-button--outlined">
+						<span class="mdc-button__ripple"></span>
+						<span class="mdc-button__label">Select Recommended</span>
+					</button>
+					<button
+						class="mdc-layout-grid__cell mdc-layout-grid__cell--span-3-desktop mdc-button mdc-button--outlined">
+						<span class="mdc-button__ripple"></span>
+						<span class="mdc-button__label">Select All</span>
+					</button>
+				</div>
+			</div>
+			<button id="remove_metadata" class="mdc-button mdc-button--raised wide_button">
+				<span class="mdc-button__ripple"></span>
+				<i class="material-icons mdc-button__icon" aria-hidden="true">delete_forever</i>
+				<span class="mdc-button__label">Remove Selected Metadata</span>
+			</button>
+		</section>
+		<!-- If no output: display: none; -->
+		<!-- Else: display: block; -->
+		<section id="image_result" class="rime_container" style="display: block">
+			<h2 class="mdc-typography--headline4">Output Image</h2>
+			<p id="dirty">The output image below does not reflect the selected metadata to be removed. Click the button
+				above to refresh.</p>
+			<div id="rime_image_container">
+				<img title="Output Image"" id=" output_image" class="mdc-elevation--z4" src="test_input.jpg">
+			</div>
+			<button id="download_image" class="mdc-button mdc-button--raised wide_button">
+				<span class="mdc-button__ripple"></span>
+				<i class="material-icons mdc-button__icon" aria-hidden="true">download</i>
+				<span class="mdc-button__label">Save New Image</span>
+			</button>
+		</section>
+	</main>
+	<aside id="error_alert" class="mdc-snackbar">
+		<div class="mdc-snackbar__surface" role="status" aria-relevant="additions">
+			<div class="mdc-snackbar__label" aria-atomic="false">
+				Error message here
+			</div>
+			<div class="mdc-snackbar__actions" aria-atomic="true">
+				<button type="button" class="mdc-button mdc-snackbar__action">
+					<div class="mdc-button__ripple"></div>
+					<span class="mdc-button__label">Details</span>
+				</button>
+			</div>
+		</div>
+	</aside>
+	<div id="rime_about" class="mdc-dialog">
+		<div class="mdc-dialog__container">
+			<div class="mdc-dialog__surface" role="alertdialog" aria-modal="true" aria-labelledby="rime_about_title"
+				aria-describedby="rime_about_content">
+				<h2 class="mdc-dialog__title" id="rime_about_title">About RIME</h2>
+				<div class="mdc-dialog__content" id="rime_about_content">
+					RIME is a progressive web application that reads and remove image metadata in your browser.
+					All images submitted in here is processed locally without being sent to any servers.
+					It works without internet connection once the web page/app is fully loaded.
+					<br>
+					<br>
+					The project is open-source and can be found on GitHub:
+					<a href="https://github.com/MikuAuahDark/rime" target="_blank">
+						https://github.com/MikuAuahDark/rime
+					</a>
+				</div>
+				<div class="mdc-dialog__actions">
+					<button type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="close">
+						<div class="mdc-button__ripple"></div>
+						<span class="mdc-button__label">Ok</span>
+					</button>
+				</div>
+			</div>
+		</div>
+		<div class="mdc-dialog__scrim"></div>
+	</div>
+	<div id="rime_metadata_description" class="mdc-dialog">
+		<div class="mdc-dialog__container">
+			<div class="mdc-dialog__surface" role="alertdialog" aria-modal="true"
+				aria-labelledby="rime_metadata_description_title" aria-describedby="rime_metadata_description_content">
+				<h2 class="mdc-dialog__title" id="rime_metadata_description_title">Metadata Name</h2>
+				<div class="mdc-dialog__content" id="rime_metadata_description_content">
+					Metadata Description.
+					<br>
+					<br>
+					This metadata cannot be removed.
+				</div>
+				<div class="mdc-dialog__actions">
+					<button type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="close">
+						<div class="mdc-button__ripple"></div>
+						<span class="mdc-button__label">Ok</span>
+					</button>
+				</div>
+			</div>
+		</div>
+		<div class="mdc-dialog__scrim"></div>
+	</div>
+	<div id="rime_error_message" class="mdc-dialog">
+		<div class="mdc-dialog__container">
+			<div class="mdc-dialog__surface" role="alertdialog" aria-modal="true"
+				aria-labelledby="rime_metadata_description_title" aria-describedby="rime_metadata_description_content">
+				<h2 class="mdc-dialog__title" id="rime_error_title">Short Error Message</h2>
+				<div class="mdc-dialog__content" id="rime_error_content">
+					Long Error Message (or no detailed information available)
+					<br>
+					<br>
+					<details>
+						<summary>Technical Information</summary>
+						Traceback here
+					</details>
+				</div>
+				<div class="mdc-dialog__actions">
+					<button type="button" class="mdc-button mdc-dialog__button" data-mdc-dialog-action="close">
+						<div class="mdc-button__ripple"></div>
+						<span class="mdc-button__label">Ok</span>
+					</button>
+				</div>
+			</div>
+		</div>
+		<div class="mdc-dialog__scrim"></div>
+	</div>
+	<footer>
+		<div class="rime_container">
+			<p>
+				<a class="rime_about_button" href="#">About</a> |
+				<a href="https://github.com/MikuAuahDark/rime" target="_blank">Source Code</a> |
+				<a href="https://github.com/MikuAuahDark/rime/issues" target="_blank">Issue Tracker</a> |
+				<a href="https://docs.google.com/forms/d/e/1FAIpQLSeBJhKnlz6Whu8ld-qPGRN-GTEcJxjPYLz11v5bWI-Hk7eglw/viewform"
+					target="_blank">Thoughts On This App? (GForm)</a>
+			</p>
+			<p>
+				Academy version. <a href="https://mikuauahdark.github.io/rime/" target="_blank">Click here for the
+					mainline version</a>
+			</p>
+		</div>
+	</footer>
+</body>
+
+</html>
