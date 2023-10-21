@@ -197,7 +197,7 @@ class UserCommentHandler extends UndefinedTypeHandler {
 			const result = []
 
 			for (const n of data.slice(8)) {
-				result.push(String.fromCharCode(n))
+				result.push(n == 0 ? "\\0" : String.fromCharCode(n))
 			}
 
 			return result.join("")
