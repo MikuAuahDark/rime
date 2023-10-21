@@ -73,10 +73,16 @@ async function requestAndCache(request) {
 		return await cacheSession.match(request)
 	}
 
-	if (response.ok) {
-		const dup = response.clone()
+	if (response.ok && response.status == 200) {
 		const cacheSession = await caches.open(CACHE_NAME)
-		cacheSession.add(dup)
+
+		try {
+			const dup = response.clone()
+			await cacheSession.add(response)
+			response = dup
+		} catch (e) {
+			console.log(e)
+		}
 	}
 
 	return response
