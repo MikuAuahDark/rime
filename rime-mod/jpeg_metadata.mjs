@@ -207,7 +207,6 @@ export class JPEGMetadata extends Metadata {
 
 		// Parse EXIF data
 		const exifData = consolidateUint8Array(exifs)
-		window.lastExifData = exifData
 		if (!hasEXIFData(exifData, 0)) {
 			throw new NoEXIFError()
 		}
