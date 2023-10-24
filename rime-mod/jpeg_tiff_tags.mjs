@@ -501,8 +501,8 @@ defineTag(0xA432, "Lens Specification", 1, LensSpecHandler,
 	"minimum F number in the maximum focal length, which are specification information for the lens that was used " +
 	"in photography."
 )
-defineTag(0xA433, "Lens Manufacturer", 1, ASCIITypeHandler, "This tag records the lens manufacturer.")
-defineTag(0xA434, "Lens Model", 1, ASCIITypeHandler, "This tag records the lens's model name and model number.")
+defineTag(0xA433, "Lens Manufacturer", 2, ASCIITypeHandler, "This tag records the lens manufacturer.")
+defineTag(0xA434, "Lens Model", 2, ASCIITypeHandler, "This tag records the lens's model name and model number.")
 defineTag(0xA435, "Lens S/N", 2, ASCIITypeHandler,
 	"This tag records the serial number of the interchangeable lens that was used in photography."
 )
