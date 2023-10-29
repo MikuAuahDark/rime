@@ -29,7 +29,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+      - name: Checkout Academy
+        uses: actions/checkout@v4
+        with:
+          ref: academy
+          path: academy
+      - name: Remove Some Files
+        run: rm academy/README.md academy/LICENSE.md
+      - name: Write Commit Hash
+        env:
+          GIT_COMMIT_URL: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
+          GIT_COMMIT_SHA_1: ${{ github.sha }}
+        run: |
+          set -e
+          sed s#GIT_COMMIT_URL#$GIT_COMMIT_URL#g index.html > tempindex.html
+          sed s#GIT_COMMIT_SHA_1_7#${GIT_COMMIT_SHA_1:0:7}#g tempindex.html > index.html
+          rm tempindex.html
       - name: Setup Pages
         uses: actions/configure-pages@v3
       - name: Upload artifact

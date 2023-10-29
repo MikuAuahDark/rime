@@ -3,12 +3,15 @@ RIME
 
 An Image Metadata Reader and Remover that performs everything in your browser.
 
+This is the mainline version with latest bugfix and features. All pull requests should go into this branch unless
+asked otherwise.
+
 Usage (Browser)
 -----
 
 Main source: `index.html`.
 
-https://MikuAuahDark.github.io/rime/
+https://MikuAuahDark.github.io/rime/index.html
 
 Usage (Node.js)
 -----
