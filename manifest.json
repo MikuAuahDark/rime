@@ -1,8 +1,8 @@
 {
-	"name": "RIME",
+	"name": "RIME (Academy)",
 	"short_name": "RIME",
 	"description": "Read & Remove Image Metadata.",
-	"id": "the_rime_project",
+	"id": "the_rime_project_academy",
 	"theme_color": "#238119",
 	"background_color": "#fff",
 	"display": "standalone",
