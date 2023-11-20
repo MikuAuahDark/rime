@@ -39,7 +39,7 @@ jobs:
         run: rm academy/README.md academy/LICENSE.md
       - name: Write Commit Hash
         env:
-          GIT_COMMIT_URL: https://github.com/${{ github.repository }}/commit/${{ github.sha }}
+          GIT_COMMIT_URL: "${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
           GIT_COMMIT_SHA_1: ${{ github.sha }}
         run: |
           set -e
