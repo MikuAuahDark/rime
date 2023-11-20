@@ -49,6 +49,8 @@ class LayoutManager {
 		this.inputAreaInfo = document.getElementById("input_area_info")
 		/** @type {HTMLInputElement} */
 		this.inputFile = document.getElementById("input_file")
+		/** @type {HTMLParagraphElement} */
+		this.inputFilename = document.getElementById("filename")
 		/** @type {HTMLAnchorElement} */
 		this.downloadClicker = document.getElementById("download_clicker")
 		/** @type {HTMLElement} */
@@ -591,6 +593,11 @@ class LayoutManager {
 	markDirty() {
 		this.setDirty(true)
 	}
+
+	setFilename(filename) {
+		this.inputFilename.textContent = filename
+		this.inputFilename.style.display = "block"
+	}
 }
 
 function main() {
@@ -632,6 +639,7 @@ function main() {
 					layout.showInputImage(file)
 					layout.setTableData(currentMetadataList)
 					layout.showMetadataInfo()
+					layout.setFilename(currentFilename)
 				} catch (e) {
 					layout.showError(e)
 				}

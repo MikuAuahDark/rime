@@ -118,6 +118,10 @@
 				visibility: visible !important;
 				transition: 0.3s;
 			}
+
+			#filename {
+				text-align: center;
+			}
 		</style>
 	</head>
 	<body class="mdc-typography" style="margin: 0px">
@@ -153,6 +157,9 @@
 					</div>
 				</div>
 				<input id="input_file" type="file" accept="image/jpeg" hidden>
+				<!-- If no state: display: none; -->
+				<!-- Else: display: block; -->
+				<p id="filename" style="display:none"></p>
 			</section>
 			<a id="download_clicker" style="display: none"></a>
 			<!-- If no state: display: none; -->
